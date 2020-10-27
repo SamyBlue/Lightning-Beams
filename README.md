@@ -72,7 +72,7 @@ Hides bolt without destroying any parts when false\
 ``Attachment0, Attachment1``\
 Bolt originates from Attachment0 and ends at Attachment1\
 ``CurveSize0, CurveSize1``\
-Works similarly to beams. See https://dk135eecbplh9.cloudfront.net/assets/blt160ad3fdeadd4ff2/BeamCurve1.png\
+Works similarly to beams. See https://dk135eecbplh9.cloudfront.net/assets/blt160ad3fdeadd4ff2/BeamCurve1.png \
 ``MinRadius, MaxRadius``\
 Governs the amplitude of fluctuations throughout the bolt\
 ``Frequency``\
@@ -92,13 +92,13 @@ Multiplies Thickness value by a fluctuating random value between MinThicknessMul
  - See https://www.desmos.com/calculator/hg5h4fpfim to help customise the shape of the wave with the below properties:
 
 ``MinTransparency, MaxTransparency``\
-See https://www.desmos.com/calculator/hg5h4fpfim\
+See https://www.desmos.com/calculator/hg5h4fpfim \
 ``PulseSpeed``\
-See https://www.desmos.com/calculator/hg5h4fpfim\
+See https://www.desmos.com/calculator/hg5h4fpfim \
 ``PulseLength``\
-See https://www.desmos.com/calculator/hg5h4fpfim\
+See https://www.desmos.com/calculator/hg5h4fpfim \
 ``FadeLength``\
-See https://www.desmos.com/calculator/hg5h4fpfim\
+See https://www.desmos.com/calculator/hg5h4fpfim \
 ``ContractFrom``\
 Parts shorten or grow once their Transparency exceeds this value. Set to a value above 1 to turn effect off. See https://imgur.com/OChA441
 
