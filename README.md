@@ -1,6 +1,6 @@
 <div align="center">
     <a href="">
-        <img src="https://user-images.githubusercontent.com/33347703/97248564-f9318600-17f9-11eb-83b7-238c6aa7a4e8.png" alt="LightningBeams" height="217" />
+        <img src="https://user-images.githubusercontent.com/33347703/97248564-f9318600-17f9-11eb-83b7-238c6aa7a4e8.png" alt="LightningBeams" height="117" />
     </a>
 </div>
 
