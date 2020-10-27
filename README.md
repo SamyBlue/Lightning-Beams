@@ -59,29 +59,29 @@ local NewSparks = LightningSparks.new(NewBolt)
 LightningBolt
 -------------
 
-``LightningBolt.new(Attachment0, Attachment1, PartCount)``
+``LightningBolt.new(Attachment0, Attachment1, PartCount)``\
 Creates a bolt at source *Attachment0* which flows into sink *Attachment1* with number of parts *PartCount*
 
-``LightningBolt:Destroy()``
+``LightningBolt:Destroy()``\
 Cleans up and clears from memory
 
 **Appearance Properties**
 
-``Enabled``
-Hides bolt without destroying any parts when false
-``Attachment0, Attachment1``
-Bolt originates from Attachment0 and ends at Attachment1
-``CurveSize0, CurveSize1``
-Works similarly to beams. See https://dk135eecbplh9.cloudfront.net/assets/blt160ad3fdeadd4ff2/BeamCurve1.png
-``MinRadius, MaxRadius``
-Governs the amplitude of fluctuations throughout the bolt
-``Frequency``
-Governs the frequency of fluctuations throughout the bolt
-``AnimationSpeed``
-Governs how fast the bolt oscillates (i.e. how fast the fluctuating wave travels along bolt)
-``Thickness``
-The thickness of the bolt
-``MinThicknessMultiplier, MaxThicknessMultiplier``
+``Enabled``\
+Hides bolt without destroying any parts when false\
+``Attachment0, Attachment1``\
+Bolt originates from Attachment0 and ends at Attachment1\
+``CurveSize0, CurveSize1``\
+Works similarly to beams. See https://dk135eecbplh9.cloudfront.net/assets/blt160ad3fdeadd4ff2/BeamCurve1.png\
+``MinRadius, MaxRadius``\
+Governs the amplitude of fluctuations throughout the bolt\
+``Frequency``\
+Governs the frequency of fluctuations throughout the bolt\
+``AnimationSpeed``\
+Governs how fast the bolt oscillates (i.e. how fast the fluctuating wave travels along bolt)\
+``Thickness``\
+The thickness of the bolt\
+``MinThicknessMultiplier, MaxThicknessMultiplier``\
 Multiplies Thickness value by a fluctuating random value between MinThicknessMultiplier and MaxThicknessMultiplier along the Bolt
 
 **Kinetic Properties**
@@ -91,59 +91,59 @@ Multiplies Thickness value by a fluctuating random value between MinThicknessMul
  - Works by passing a "wave" function which travels from left to right where the wave height represents opacity (opacity being 1 - Transparency)
  - See https://www.desmos.com/calculator/hg5h4fpfim to help customise the shape of the wave with the below properties:
 
-``MinTransparency, MaxTransparency``
-See https://www.desmos.com/calculator/hg5h4fpfim
-``PulseSpeed``
-See https://www.desmos.com/calculator/hg5h4fpfim
-``PulseLength``
-See https://www.desmos.com/calculator/hg5h4fpfim
-``FadeLength``
-See https://www.desmos.com/calculator/hg5h4fpfim
-``ContractFrom``
+``MinTransparency, MaxTransparency``\
+See https://www.desmos.com/calculator/hg5h4fpfim\
+``PulseSpeed``\
+See https://www.desmos.com/calculator/hg5h4fpfim\
+``PulseLength``\
+See https://www.desmos.com/calculator/hg5h4fpfim\
+``FadeLength``\
+See https://www.desmos.com/calculator/hg5h4fpfim\
+``ContractFrom``\
 Parts shorten or grow once their Transparency exceeds this value. Set to a value above 1 to turn effect off. See https://imgur.com/OChA441
 
 **Color Properties**
 
-``Color``
-Can be a Color3 or ColorSequence
-``ColorOffsetSpeed``
+``Color``\
+Can be a Color3 or ColorSequence\
+``ColorOffsetSpeed``\
 Sets speed at which ColorSequence travels along Bolt
 
 LightningSparks
 ---------------
 
-``LightningSparks.new(LightningBolt, MaxSparkCount)``
+``LightningSparks.new(LightningBolt, MaxSparkCount)``\
 Creates Lightning Sparks which fly out from *LightningBolt* up to a maximum of *MaxSparkCount*
 
-``LightningSparks:Destroy()``
+``LightningSparks:Destroy()``\
 Clears from memory
 
 **Properties**
 
-``Enabled``
-Stops spawning sparks when false
-``LightningBolt``
-Bolt which sparks fly out of
-``MaxSparkCount``
-Max number of sparks visible at any given instance
-``MinSpeed, MaxSpeed``
-Min and max PulseSpeeds of sparks
-``MinDistance, MaxDistance``
-Governs how far sparks travel away from main bolt
-``MinPartsPerSpark, MaxPartsPerSpark``
+``Enabled``\
+Stops spawning sparks when false\
+``LightningBolt``\
+Bolt which sparks fly out of\
+``MaxSparkCount``\
+Max number of sparks visible at any given instance\
+``MinSpeed, MaxSpeed``\
+Min and max PulseSpeeds of sparks\
+``MinDistance, MaxDistance``\
+Governs how far sparks travel away from main bolt\
+``MinPartsPerSpark, MaxPartsPerSpark``\
 Adjustable
 
 LightningExplosion
 ------------------
 
-``LightningExplosion.new(Position, Size, NumBolts, Color, BoltColor, UpVector)``
-*Size*: Value between 0 and 1 (1 for largest)
-*NumBolts*: Number of lightning bolts shot out from explosion
-*Color*: Can be a Color3 or ColorSequence
-*BoltColor*: Can be a Color3 or ColorSequence
+``LightningExplosion.new(Position, Size, NumBolts, Color, BoltColor, UpVector)``\
+*Size*: Value between 0 and 1 (1 for largest)\
+*NumBolts*: Number of lightning bolts shot out from explosion\
+*Color*: Can be a Color3 or ColorSequence\
+*BoltColor*: Can be a Color3 or ColorSequence\
 *UpVector*: Can be used to "rotate" the explosion
 
-``LightningExplosion:Destroy()``
+``LightningExplosion:Destroy()``\
 Cleans up and clears from memory
 
 Downloads
