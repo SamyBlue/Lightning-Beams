@@ -36,6 +36,8 @@ Showcase
 ========
 
 ![ezgif com-gif-maker](https://user-images.githubusercontent.com/33347703/97609540-a3ccc300-1a0b-11eb-9b9a-a946163ed356.gif)
+![ezgif com-gif-maker (2)](https://user-images.githubusercontent.com/33347703/97610440-c3b0b680-1a0c-11eb-8c1b-f5f423ab0168.gif)
+![ezgif com-gif-maker (4)](https://user-images.githubusercontent.com/33347703/97610571-fb1f6300-1a0c-11eb-8db4-0138d1ff25ff.gif)
 
 Usage
 =====
