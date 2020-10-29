@@ -55,7 +55,7 @@ game:GetService("RunService").Heartbeat:Connect(function ()
 			
 			local Bolt = ThisSpark.LightningBolt
 			
-			if Bolt.Parts[1].Parent == nil then
+			if Bolt.Parts[1] == nil or Bolt.Parts[1].Parent == nil then
 				ThisSpark:Destroy()
 				return 
 			end
@@ -113,8 +113,8 @@ game:GetService("RunService").Heartbeat:Connect(function ()
 					--Make new spark--
 					
 					local A1, A2 = {}, {}
-					A1.WorldPosition = Part.Position + localTrng*Part.CFrame.RightVector*Part.Size.X
-					A2.WorldPosition = A1.WorldPosition + RandomVectorOffset(Part.CFrame.RightVector, math.pi/4)*rng:NextNumber(ThisSpark.MinDistance, ThisSpark.MaxDistance)
+					A1.WorldPosition = Part.CFrame.Position + localTrng*Part.CFrame.UpVector*Part.Size.Y
+					A2.WorldPosition = A1.WorldPosition + RandomVectorOffset(Part.CFrame.UpVector, math.pi/4)*rng:NextNumber(ThisSpark.MinDistance, ThisSpark.MaxDistance)
 					A1.WorldAxis = (A2.WorldPosition - A1.WorldPosition).Unit
 					A2.WorldAxis = A1.WorldAxis
 					local NewSpark = LightningBolt.new(A1, A2, rng:NextInteger(ThisSpark.MinPartsPerSpark, ThisSpark.MaxPartsPerSpark))
@@ -122,12 +122,12 @@ game:GetService("RunService").Heartbeat:Connect(function ()
 					--NewSpark.MaxAngleOffset = math.rad(70)
 					NewSpark.MinRadius, NewSpark.MaxRadius = 0, 0.8
 					NewSpark.AnimationSpeed = 0
-					NewSpark.Thickness = Part.Size.Y / 2
+					NewSpark.Thickness = Part.Size.X / 1.2
 					NewSpark.MinThicknessMultiplier, NewSpark.MaxThicknessMultiplier = 1, 1
 					NewSpark.PulseLength = 0.5
 					NewSpark.PulseSpeed = rng:NextNumber(ThisSpark.MinSpeed, ThisSpark.MaxSpeed)
 					NewSpark.FadeLength = 0.25
-					local cH, cS, cV = Color3.toHSV(Part.Color)
+					local cH, cS, cV = Color3.toHSV(Part.Color3)
 					NewSpark.Color = Color3.fromHSV(cH, 0.5, cV)
 					
 					ThisSpark.SlotTable[ChosenSlot] = NewSpark
