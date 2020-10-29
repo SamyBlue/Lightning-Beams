@@ -86,20 +86,20 @@ function LightningExplosion.new(Position, Size, NumBolts, Color, BoltColor, UpVe
 
 		A1.WorldPosition, A1.WorldAxis = attach.WorldPosition, RandomVectorOffsetBetween(self.UpVector, math.rad(65), math.rad(80))
 		A2.WorldPosition, A2.WorldAxis = attach.WorldPosition + A1.WorldAxis*rng_v:NextNumber(20, 40)*1.4*size, RandomVectorOffsetBetween(-self.UpVector, math.rad(70), math.rad(110))
-		local curve0, curve1 = rng_v:NextNumber(0, 10)*size, rng_v:NextNumber(0, 10)*size
-		local NewBolt = LightningBolt.new(A1, A2, curve0, curve1, 10)
+		--local curve0, curve1 = rng_v:NextNumber(0, 10)*size, rng_v:NextNumber(0, 10)*size
+		local NewBolt = LightningBolt.new(A1, A2, 10)
 		NewBolt.AnimationSpeed = 0
-		NewBolt.Thickness = 1 --*size
+--		NewBolt.Thickness = 1 --*size
 		NewBolt.Color = self.BoltColor
-		NewBolt.PulseLength = 0.25
+		NewBolt.PulseLength = 0.8
 		NewBolt.ColorOffsetSpeed = 20
-		NewBolt.Frequency = 2
+		NewBolt.Frequency = 3
 		NewBolt.MinRadius, NewBolt.MaxRadius = 0, 4*size
-		NewBolt.FadeLength = 0.1
+		NewBolt.FadeLength = 0.4
 		NewBolt.PulseSpeed = 5
 		NewBolt.MinThicknessMultiplier, NewBolt.MaxThicknessMultiplier = 0.7, 1
 
-		local NewSparks = LightningSparks.new(NewBolt, 5)
+		local NewSparks = LightningSparks.new(NewBolt)
 		NewSparks.MinDistance, NewSparks.MaxDistance = 7.5, 10
 		
 		NewBolt.Velocity = (A2.WorldPosition - A1.WorldPosition).Unit*0.1*size
