@@ -13,10 +13,11 @@ Optimised, lightweight, and highly customisable Lightning Effects for use in Rob
 
  - Layered, moving Perlin noise
  - Uniform disk-point picking for even distribution of control points
- - Can go along a Bezier curve rather than just straight-lines
+ - Can go along a Bezier curve rather than just straight-lines (i.e. Similar to how rblx beams curve)
  - Varying thickness, length, and, transparency
  - Can use ColorSequences
  - Lightning "Sparks" and "Explosion" sub-modules
+ - Can smoothly travel as a projectile trying to reach a point
 
 Table of contents
 =============
@@ -34,7 +35,7 @@ Table of contents
 Showcase
 ========
 
-stuff
+![ezgif com-gif-maker](https://user-images.githubusercontent.com/33347703/97609540-a3ccc300-1a0b-11eb-9b9a-a946163ed356.gif)
 
 Usage
 =====
@@ -76,7 +77,7 @@ Works similarly to beams. See https://dk135eecbplh9.cloudfront.net/assets/blt160
 ``MinRadius, MaxRadius``\
 Governs the amplitude of fluctuations throughout the bolt\
 ``Frequency``\
-Governs the frequency of fluctuations throughout the bolt\
+Governs the frequency of fluctuations throughout the bolt. Lower this to remove jittery-looking lightning\
 ``AnimationSpeed``\
 Governs how fast the bolt oscillates (i.e. how fast the fluctuating wave travels along bolt)\
 ``Thickness``\
@@ -94,7 +95,7 @@ Multiplies Thickness value by a fluctuating random value between MinThicknessMul
 ``MinTransparency, MaxTransparency``\
 See https://www.desmos.com/calculator/hg5h4fpfim \
 ``PulseSpeed``\
-See https://www.desmos.com/calculator/hg5h4fpfim \
+Bolt arrives at Attachment1 1/PulseSpeed seconds later. See https://www.desmos.com/calculator/hg5h4fpfim \
 ``PulseLength``\
 See https://www.desmos.com/calculator/hg5h4fpfim \
 ``FadeLength``\
