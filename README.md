@@ -152,4 +152,5 @@ Cleans up and clears from memory
 Downloads
 =========
 
-stuff
+https://devforum.roblox.com/t/effect-lightning-beams-seamless-smooth-and-procedurally-animated-with-beam-like-properties/843534
+[In usage section]
