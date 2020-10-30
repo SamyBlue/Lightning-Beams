@@ -29,7 +29,6 @@ Table of contents
       * [LightningBolt](#lightningbolt)
       * [LightningSparks](#lightningsparks)
       * [LightningExplosion](#lightningexplosion)
-   * [Downloads](#downloads)
 <!--te-->
 
 Showcase
