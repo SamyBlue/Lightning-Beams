@@ -1,5 +1,5 @@
 --Procedural Lightning Module. By Quasiduck
---License: See GitHub
+--License: See GitHub ~ https://github.com/SamyBlue/Lightning-Beams/blob/main/LICENSE
 --See README for guide on how to use or scroll down to see all properties in LightningBolt.new
 --All properties update in real-time except PartCount which requires a new LightningBolt to change
 --i.e. You can change a property at any time and it will still update the look of the bolt
