@@ -176,6 +176,8 @@ function LightningBolt:_Disable()
 end
 
 game:GetService("RunService").Heartbeat:Connect(function()
+	debug.profilebegin("LightningBolt")
+
 	for _, ThisBranch in pairs(ActiveBranches) do
 		if ThisBranch.Enabled == true then
 			ThisBranch._PartsHidden = false
@@ -238,6 +240,8 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			end
 		end
 	end
+
+	debug.profileend()
 end)
 
 return LightningBolt
