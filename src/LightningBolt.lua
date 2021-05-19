@@ -12,7 +12,19 @@ local parent = workspace.CurrentCamera
 --*Part Cache Setup
 --New parts automatically get added to cache if more parts are requested for use where a warning is thrown
 
+local BoltPart = Instance.new("Part") --Template primitive that will make up the entire bolt
+BoltPart.TopSurface, BoltPart.BottomSurface = 0, 0
+BoltPart.Anchored, BoltPart.CanCollide = true, false
+BoltPart.Locked, BoltPart.CastShadow = true, false
+BoltPart.Shape = "Cylinder"
+BoltPart.Name = "BoltPart"
+BoltPart.Material = Enum.Material.Neon
+BoltPart.Color = Color3.new(1, 1, 1)
+BoltPart.Transparency = 1
 
+local PartCache = require(script.Parent.PartCache:WaitForChild("PartCache"))
+local LightningCache = PartCache.new(BoltPart, PARTS_IN_CACHE)
+LightningCache:SetCacheParent(parent)
 
 --*
 
@@ -27,16 +39,6 @@ end
 local function CubicBezier(p0, p1, p2, p3, t)
 	return p0 * (1 - t) ^ 3 + p1 * 3 * t * (1 - t) ^ 2 + p2 * 3 * (1 - t) * t ^ 2 + p3 * t ^ 3
 end
-
-local BoltPart = Instance.new("Part") --Template primitive that will make up the entire bolt
-BoltPart.TopSurface, BoltPart.BottomSurface = 0, 0
-BoltPart.Anchored, BoltPart.CanCollide = true, false
-BoltPart.Locked, BoltPart.CastShadow = true, false
-BoltPart.Shape = "Cylinder"
-BoltPart.Name = "BoltPart"
-BoltPart.Material = Enum.Material.Neon
-BoltPart.Color = Color3.new(1, 1, 1)
-BoltPart.Transparency = 1
 
 local xInverse = CFrame.lookAt(Vector3.new(), Vector3.new(1, 0, 0)):inverse()
 local offsetAngle = math.cos(math.rad(90))
@@ -63,7 +65,7 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 
 	--Bolt Appearance Properties
 
-	self.Enabled = true --Hides bolt without destroying any parts when false
+	self.Enabled = true --Hides bolt without removing any parts when false
 	self.Attachment0, self.Attachment1 = Attachment0, Attachment1 --Bolt originates from Attachment0 and ends at Attachment1
 	self.CurveSize0, self.CurveSize1 = 0, 0 --Works similarly to beams. See https://dk135eecbplh9.cloudfront.net/assets/blt160ad3fdeadd4ff2/BeamCurve1.png
 	self.MinRadius, self.MaxRadius = 0, 2.4 --Governs the amplitude of fluctuations throughout the bolt
@@ -96,9 +98,7 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 	self._Parts = {} --The BoltParts which make up the Bolt
 
 	for i = 1, PartCount do
-		local BPart = BoltPart:Clone()
-		BPart.Parent = parent
-		self._Parts[i] = BPart
+		self._Parts[i] = LightningCache:GetPart()
 	end
 
 	self._PartsHidden = false
@@ -116,7 +116,7 @@ function LightningBolt:Destroy()
 	ActiveBranches[self._RefIndex] = nil
 
 	for i = 1, #self._Parts do
-		self._Parts[i]:Destroy()
+		LightningCache:ReturnPart(self._Parts[i])
 
 		if i % 100 == 0 then
 			wait()
