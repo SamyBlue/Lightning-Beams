@@ -9,7 +9,7 @@ local clock = os.clock
 local workspace = game:GetService("Workspace")
 local parent = workspace.CurrentCamera
 
---*Part Cache Setup
+--*Part Cache Setup: Note that a warning is thrown if there isn't enough parts in cache where the module will automatically add more
 --New parts automatically get added to cache if more parts are requested for use where a warning is thrown
 
 local BoltPart = Instance.new("Part") --Template primitive that will make up the entire bolt
