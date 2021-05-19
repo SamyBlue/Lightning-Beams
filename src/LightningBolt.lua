@@ -128,13 +128,43 @@ function LightningBolt:Destroy()
 	self = nil
 end
 
+function LightningBolt:_UpdateGeometry(
+	BPart,
+	percentAlongBolt,
+	timePassed,
+	Opacity,
+	ThicknessMultiplier,
+	PrevPoint,
+	NextPoint
+)
+	local contractf = 1 - self.ContractFrom
+	local PartsN = #self.Parts
+	local Thickness = self.Thickness * ThicknessMultiplier * Opacity
 
+	if Opacity > contractf then
+		BPart.Size = Vector3.new((NextPoint - PrevPoint).Magnitude, Thickness, Thickness)
+		BPart.CFrame = CFrame.lookAt((PrevPoint + NextPoint) * 0.5, NextPoint) * xInverse
+		BPart.Transparency = 1 - Opacity
+	elseif Opacity > contractf - 1 / (PartsN * self.FadeLength) then
+		local interp = (1 - (Opacity - (contractf - 1 / (PartsN * self.FadeLength))) * PartsN * self.FadeLength)
+			* (percentAlongBolt < timePassed * self.PulseSpeed - 0.5 * self.PulseLength and 1 or -1)
+		BPart.Size = Vector3.new((1 - math.abs(interp)) * (NextPoint - PrevPoint).Magnitude, Thickness, Thickness)
+		BPart.CFrame = CFrame.lookAt(
+				PrevPoint + (NextPoint - PrevPoint) * (math.max(0, interp) + 0.5 * (1 - math.abs(interp))),
+				NextPoint
+			)
+			* xInverse
+		BPart.Transparency = 1 - Opacity
+	else
+		BPart.Transparency = 1
+	end
+end
 
 function LightningBolt:_UpdateColor(BPart, percentAlongBolt, timePassed)
 	--Assume ColorSequence was supplied
 	local t1 = (self.RanNum + percentAlongBolt - timePassed * self.ColorOffsetSpeed) % 1
 	local keypoints = self.Color.Keypoints
-	for t = 1, #keypoints - 1 do --convert colorsequence onto lightning
+	for t = 1, #keypoints - 1 do
 		if keypoints[t].Time < t1 and t1 < keypoints[t + 1].Time then
 			BPart.Color = keypoints[t].Value:lerp(
 				keypoints[t + 1].Value,
@@ -153,7 +183,6 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			ThisBranch.PartsHidden = false
 			local MinOpa, MaxOpa = 1 - ThisBranch.MaxTransparency, 1 - ThisBranch.MinTransparency
 			local MinRadius, MaxRadius = ThisBranch.MinRadius, ThisBranch.MaxRadius
-			local thickness = ThisBranch.Thickness
 			local Parts = ThisBranch.Parts
 			local PartsN = #Parts
 			local RanNum = ThisBranch.RanNum
@@ -196,34 +225,9 @@ game:GetService("RunService").Heartbeat:Connect(function()
 						) * CFrame.new(0, 0, -noise1)).Position
 						or bezier1
 
-					if Opacity > contractf then
-						BPart.Size = Vector3.new(
-							(NextPoint - PrevPoint).Magnitude,
-							thickness * thicknessNoise * Opacity,
-							thickness * thicknessNoise * Opacity
-						)
-						BPart.CFrame = CFrame.lookAt((PrevPoint + NextPoint) * 0.5, NextPoint) * xInverse
-						BPart.Transparency = 1 - Opacity
-					elseif Opacity > contractf - 1 / (PartsN * FadeLength) then
-						local interp = (1 - (Opacity - (contractf - 1 / (PartsN * FadeLength))) * PartsN * FadeLength)
-							* (t1 < timePassed * PulseSpeed - 0.5 * PulseLength and 1 or -1)
-						BPart.Size = Vector3.new(
-							(1 - math.abs(interp)) * (NextPoint - PrevPoint).Magnitude,
-							thickness * thicknessNoise * Opacity,
-							thickness * thicknessNoise * Opacity
-						)
-						BPart.CFrame = CFrame.lookAt(
-								PrevPoint
-									+ (NextPoint - PrevPoint) * (math.max(0, interp) + 0.5 * (1 - math.abs(interp))),
-								NextPoint
-							)
-							* xInverse
-						BPart.Transparency = 1 - Opacity
-					else
-						BPart.Transparency = 1
-					end
+					ThisBranch:_UpdateGeometry(BPart, t1, timePassed, Opacity, thicknessNoise, PrevPoint, NextPoint)
 
-					LightningBolt:_UpdateColor(BPart, t1, timePassed)
+					ThisBranch:_UpdateColor(BPart, t1, timePassed)
 
 					PrevPoint, bezier0 = NextPoint, bezier1
 				end
