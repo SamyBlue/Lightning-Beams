@@ -82,6 +82,8 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 
 	--*
 
+	--! Private vars are prefixed with an underscore (e.g. self._Parts) and should be ignored / should not be changed manually
+
 	self._Parts = {} --The BoltParts which make up the Bolt
 
 	for i = 1, PartCount do
