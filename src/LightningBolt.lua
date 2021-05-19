@@ -1,8 +1,8 @@
 --Procedural Lightning Module. By Quasiduck
---License: See GitHub
+--License: https://github.com/SamyBlue/Lightning-Beams/blob/main/LICENSE
 --See README for guide on how to use or scroll down to see all properties in LightningBolt.new
 --All properties update in real-time except PartCount which requires a new LightningBolt to change
---i.e. You can change a property at any time and it will still update the look of the bolt
+--i.e. You can change a property at any time after a LightningBolt instance is created and it will still update the look of the bolt
 
 local clock = os.clock
 
@@ -18,7 +18,7 @@ local function CubicBezier(p0, p1, p2, p3, t)
 	return p0 * (1 - t) ^ 3 + p1 * 3 * t * (1 - t) ^ 2 + p2 * 3 * (1 - t) * t ^ 2 + p3 * t ^ 3
 end
 
-local BoltPart = Instance.new("Part")
+local BoltPart = Instance.new("Part") --Template primitive that will make up the entire bolt
 BoltPart.TopSurface, BoltPart.BottomSurface = 0, 0
 BoltPart.Anchored, BoltPart.CanCollide = true, false
 BoltPart.Shape = "Cylinder"
@@ -30,9 +30,10 @@ BoltPart.Transparency = 1
 local xInverse = CFrame.lookAt(Vector3.new(), Vector3.new(1, 0, 0)):inverse()
 local offsetAngle = math.cos(math.rad(90))
 
-local ActiveBranches = {}
+local ActiveBranches = {} --Contains all LightningBolt instances
 
-local LightningBolt = {}
+local LightningBolt = {} --Define new class
+LightningBolt.__type = "LightningBolt"
 LightningBolt.__index = LightningBolt
 
 --Small tip: You don't need to use actual Roblox Attachments below. You can also create "fake" ones as follows:
@@ -46,7 +47,7 @@ local NewBolt = LightningBolt.new(A1, A2, 40)
 function LightningBolt.new(Attachment0, Attachment1, PartCount)
 	local self = setmetatable({}, LightningBolt)
 
-	--Main (default) Properties--
+	--*Main (default) Properties--
 
 	--Bolt Appearance Properties--
 	self.Enabled = true --Hides bolt without destroying any parts when false
@@ -73,7 +74,7 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 	self.Color = Color3.new(1, 1, 1) --Can be a Color3 or ColorSequence
 	self.ColorOffsetSpeed = 3 --Sets speed at which ColorSequence travels along Bolt
 
-	--
+	--*
 
 	self.Parts = {} --The BoltParts which make up the Bolt
 
