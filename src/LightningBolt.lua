@@ -117,10 +117,6 @@ function LightningBolt:Destroy()
 
 	for i = 1, #self._Parts do
 		LightningCache:ReturnPart(self._Parts[i])
-
-		if i % 100 == 0 then
-			wait()
-		end
 	end
 
 	self = nil
