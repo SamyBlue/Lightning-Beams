@@ -152,13 +152,13 @@ end
 function LightningBolt:_UpdateColor(BPart, PercentAlongBolt, TimePassed)
 	--Assume ColorSequence was supplied
 	if typeof(self.Color) == "Color3" then
-		BPart.Color3 = self.Color
+		BPart.Color = self.Color
 	else --ColorSequence
 		local t1 = (self._RanNum + PercentAlongBolt - TimePassed * self.ColorOffsetSpeed) % 1
 		local keypoints = self.Color.Keypoints
 		for i = 1, #keypoints - 1 do --convert colorsequence onto lightning
 			if keypoints[i].Time < t1 and t1 < keypoints[i + 1].Time then
-				BPart.Color3 = keypoints[i].Value:lerp(
+				BPart.Color = keypoints[i].Value:lerp(
 					keypoints[i + 1].Value,
 					(t1 - keypoints[i].Time) / (keypoints[i + 1].Time - keypoints[i].Time)
 				)
