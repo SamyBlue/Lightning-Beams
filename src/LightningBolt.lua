@@ -28,6 +28,7 @@ BoltPart.Color = Color3.new(1, 1, 1)
 BoltPart.Transparency = 1
 
 local xInverse = CFrame.lookAt(Vector3.new(), Vector3.new(1, 0, 0)):inverse()
+local offsetAngle = math.cos(math.rad(90))
 
 local ActiveBranches = {}
 
@@ -130,16 +131,16 @@ end
 
 function LightningBolt:_UpdateGeometry(
 	BPart,
-	percentAlongBolt,
-	timePassed,
+	PercentAlongBolt,
+	TimePassed,
 	Opacity,
-	ThicknessMultiplier,
+	ThicknessNoiseMultiplier,
 	PrevPoint,
 	NextPoint
 )
 	local contractf = 1 - self.ContractFrom
 	local PartsN = #self.Parts
-	local Thickness = self.Thickness * ThicknessMultiplier * Opacity
+	local Thickness = self.Thickness * ThicknessNoiseMultiplier * Opacity
 
 	if Opacity > contractf then
 		BPart.Size = Vector3.new((NextPoint - PrevPoint).Magnitude, Thickness, Thickness)
@@ -147,7 +148,7 @@ function LightningBolt:_UpdateGeometry(
 		BPart.Transparency = 1 - Opacity
 	elseif Opacity > contractf - 1 / (PartsN * self.FadeLength) then
 		local interp = (1 - (Opacity - (contractf - 1 / (PartsN * self.FadeLength))) * PartsN * self.FadeLength)
-			* (percentAlongBolt < timePassed * self.PulseSpeed - 0.5 * self.PulseLength and 1 or -1)
+			* (PercentAlongBolt < TimePassed * self.PulseSpeed - 0.5 * self.PulseLength and 1 or -1)
 		BPart.Size = Vector3.new((1 - math.abs(interp)) * (NextPoint - PrevPoint).Magnitude, Thickness, Thickness)
 		BPart.CFrame = CFrame.lookAt(
 				PrevPoint + (NextPoint - PrevPoint) * (math.max(0, interp) + 0.5 * (1 - math.abs(interp))),
@@ -160,9 +161,9 @@ function LightningBolt:_UpdateGeometry(
 	end
 end
 
-function LightningBolt:_UpdateColor(BPart, percentAlongBolt, timePassed)
+function LightningBolt:_UpdateColor(BPart, PercentAlongBolt, TimePassed)
 	--Assume ColorSequence was supplied
-	local t1 = (self.RanNum + percentAlongBolt - timePassed * self.ColorOffsetSpeed) % 1
+	local t1 = (self.RanNum + PercentAlongBolt - TimePassed * self.ColorOffsetSpeed) % 1
 	local keypoints = self.Color.Keypoints
 	for t = 1, #keypoints - 1 do
 		if keypoints[t].Time < t1 and t1 < keypoints[t + 1].Time then
@@ -175,7 +176,12 @@ function LightningBolt:_UpdateColor(BPart, percentAlongBolt, timePassed)
 	end
 end
 
-local offsetAngle = math.cos(math.rad(90))
+function LightningBolt:_Disable()
+	self.Enabled = false
+	for _, BPart in ipairs(self.Parts) do
+		BPart.Transparency = self.DisabledTransparency
+	end
+end
 
 game:GetService("RunService").Heartbeat:Connect(function()
 	for _, ThisBranch in pairs(ActiveBranches) do
@@ -186,7 +192,6 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			local Parts = ThisBranch.Parts
 			local PartsN = #Parts
 			local RanNum = ThisBranch.RanNum
-			local StartT = ThisBranch.StartT
 			local spd = ThisBranch.AnimationSpeed
 			local freq = ThisBranch.Frequency
 			local MinThick, MaxThick = ThisBranch.MinThicknessMultiplier, ThisBranch.MaxThicknessMultiplier
@@ -195,7 +200,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			local p0, p1, p2, p3 = a0.WorldPosition, a0.WorldPosition
 				+ a0.WorldAxis * CurveSize0, a1.WorldPosition
 				- a1.WorldAxis * CurveSize1, a1.WorldPosition
-			local timePassed = clock() - StartT
+			local timePassed = clock() - ThisBranch.StartT
 			local PulseLength, PulseSpeed, FadeLength =
 				ThisBranch.PulseLength, ThisBranch.PulseSpeed, ThisBranch.FadeLength
 			local PrevPoint, bezier0 = p0, p0
@@ -237,10 +242,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
 		else --Enabled = false
 			if ThisBranch.PartsHidden == false then
 				ThisBranch.PartsHidden = true
-				local datr = ThisBranch.DisabledTransparency
-				for i = 1, #ThisBranch.Parts do
-					ThisBranch.Parts[i].Transparency = datr
-				end
+				ThisBranch:_Disable()
 			end
 		end
 	end
