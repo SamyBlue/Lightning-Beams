@@ -92,12 +92,6 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 		self._Parts[i] = BPart
 	end
 
-	if typeof(self.Color) == "Color3" then --Overload _UpdateColor() if Color3 supplied
-		self._UpdateColor = function(BPart)
-			BPart.Color = self.Color
-		end
-	end
-
 	self._PartsHidden = false
 	self._DisabledTransparency = 1
 	self._StartT = clock()
@@ -157,15 +151,19 @@ end
 
 function LightningBolt:_UpdateColor(BPart, PercentAlongBolt, TimePassed)
 	--Assume ColorSequence was supplied
-	local t1 = (self._RanNum + PercentAlongBolt - TimePassed * self.ColorOffsetSpeed) % 1
-	local keypoints = self.Color.Keypoints
-	for t = 1, #keypoints - 1 do
-		if keypoints[t].Time < t1 and t1 < keypoints[t + 1].Time then
-			BPart.Color = keypoints[t].Value:lerp(
-				keypoints[t + 1].Value,
-				(t1 - keypoints[t].Time) / (keypoints[t + 1].Time - keypoints[t].Time)
-			)
-			break
+	if typeof(self.Color) == "Color3" then
+		BPart.Color3 = self.Color
+	else --ColorSequence
+		local t1 = (self._RanNum + PercentAlongBolt - TimePassed * self.ColorOffsetSpeed) % 1
+		local keypoints = self.Color.Keypoints
+		for i = 1, #keypoints - 1 do --convert colorsequence onto lightning
+			if keypoints[i].Time < t1 and t1 < keypoints[i + 1].Time then
+				BPart.Color3 = keypoints[i].Value:lerp(
+					keypoints[i + 1].Value,
+					(t1 - keypoints[i].Time) / (keypoints[i + 1].Time - keypoints[i].Time)
+				)
+				break
+			end
 		end
 	end
 end
