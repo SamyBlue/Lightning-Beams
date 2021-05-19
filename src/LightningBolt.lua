@@ -6,15 +6,15 @@
 
 local clock = os.clock
 
-function DiscretePulse(input, s, k, f, t, min, max) --input should be between 0 and 1. See https://www.desmos.com/calculator/hg5h4fpfim for demonstration.
+local function DiscretePulse(input, s, k, f, t, min, max) --input should be between 0 and 1. See https://www.desmos.com/calculator/hg5h4fpfim for demonstration.
 	return math.clamp(k / (2 * f) - math.abs((input - t * s + 0.5 * k) / f), min, max)
 end
 
-function NoiseBetween(x, y, z, min, max)
+local function NoiseBetween(x, y, z, min, max)
 	return min + (max - min) * (math.noise(x, y, z) + 0.5)
 end
 
-function CubicBezier(p0, p1, p2, p3, t)
+local function CubicBezier(p0, p1, p2, p3, t)
 	return p0 * (1 - t) ^ 3 + p1 * 3 * t * (1 - t) ^ 2 + p2 * 3 * (1 - t) * t ^ 2 + p3 * t ^ 3
 end
 
@@ -97,6 +97,12 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 		PrevPoint, bezier0 = NextPoint, bezier1
 	end
 
+	if typeof(self.Color) == "Color3" then --Overload _UpdateColor() if Color3 supplied
+		self._UpdateColor = function(BPart)
+			BPart.Color = self.Color
+		end
+	end
+
 	self.PartsHidden = false
 	self.DisabledTransparency = 1
 	self.StartT = clock()
@@ -120,6 +126,23 @@ function LightningBolt:Destroy()
 	end
 
 	self = nil
+end
+
+
+
+function LightningBolt:_UpdateColor(BPart, percentAlongBolt, timePassed)
+	--Assume ColorSequence was supplied
+	local t1 = (self.RanNum + percentAlongBolt - timePassed * self.ColorOffsetSpeed) % 1
+	local keypoints = self.Color.Keypoints
+	for t = 1, #keypoints - 1 do --convert colorsequence onto lightning
+		if keypoints[t].Time < t1 and t1 < keypoints[t + 1].Time then
+			BPart.Color = keypoints[t].Value:lerp(
+				keypoints[t + 1].Value,
+				(t1 - keypoints[t].Time) / (keypoints[t + 1].Time - keypoints[t].Time)
+			)
+			break
+		end
+	end
 end
 
 local offsetAngle = math.cos(math.rad(90))
@@ -146,15 +169,12 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			local timePassed = clock() - StartT
 			local PulseLength, PulseSpeed, FadeLength =
 				ThisBranch.PulseLength, ThisBranch.PulseSpeed, ThisBranch.FadeLength
-			local Color = ThisBranch.Color
-			local ColorOffsetSpeed = ThisBranch.ColorOffsetSpeed
-			local contractf = 1 - ThisBranch.ContractFrom
 			local PrevPoint, bezier0 = p0, p0
 
 			if timePassed < (PulseLength + 1) / PulseSpeed then
 				for i = 1, PartsN do
 					local BPart = Parts[i]
-					local t1 = i / PartsN
+					local t1 = i / PartsN --percentAlongBolt
 					local Opacity = DiscretePulse(t1, PulseSpeed, PulseLength, FadeLength, timePassed, MinOpa, MaxOpa)
 					local bezier1 = CubicBezier(p0, p1, p2, p3, t1)
 					local time = -timePassed --minus to ensure bolt waves travel from a0 to a1
@@ -203,21 +223,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
 						BPart.Transparency = 1
 					end
 
-					if typeof(Color) == "Color3" then
-						BPart.Color = Color
-					else --ColorSequence
-						t1 = (RanNum + t1 - timePassed * ColorOffsetSpeed) % 1
-						local keypoints = Color.Keypoints
-						for t = 1, #keypoints - 1 do --convert colorsequence onto lightning
-							if keypoints[t].Time < t1 and t1 < keypoints[t + 1].Time then
-								BPart.Color = keypoints[t].Value:lerp(
-									keypoints[t + 1].Value,
-									(t1 - keypoints[t].Time) / (keypoints[t + 1].Time - keypoints[t].Time)
-								)
-								break
-							end
-						end
-					end
+					LightningBolt:_UpdateColor(BPart, t1, timePassed)
 
 					PrevPoint, bezier0 = NextPoint, bezier1
 				end
