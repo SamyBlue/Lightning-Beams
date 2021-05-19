@@ -35,7 +35,7 @@ function LightningSparks:Destroy()
 	ActiveSparks[self.RefIndex] = nil
 	
 	for i, v in pairs(self.SlotTable) do
-		if v.Parts[1].Parent == nil then
+		if v._Parts[1].Parent == nil then
 			self.SlotTable[i] = nil --Removes reference to prevent memory leak
 		end
 	end
@@ -55,12 +55,12 @@ game:GetService("RunService").Heartbeat:Connect(function ()
 			
 			local Bolt = ThisSpark.LightningBolt
 			
-			if Bolt.Parts[1].Parent == nil then
+			if Bolt._Parts[1].Parent == nil then
 				ThisSpark:Destroy()
 				return 
 			end
 			
-			local BoltParts = Bolt.Parts
+			local BoltParts = Bolt._Parts
 			local BoltPartsN = #BoltParts
 				
 			local opaque_parts = {}
@@ -147,7 +147,7 @@ game:GetService("RunService").Heartbeat:Connect(function ()
 		local slotsInUse = 0
 		
 		for i, v in pairs(ThisSpark.SlotTable) do
-			if v.Parts[1].Parent ~= nil then
+			if v._Parts[1].Parent ~= nil then
 				slotsInUse = slotsInUse + 1
 			else
 				ThisSpark.SlotTable[i] = nil --Removes reference to prevent memory leak
