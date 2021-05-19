@@ -5,6 +5,7 @@
 --i.e. You can change a property at any time after a LightningBolt instance is created and it will still update the look of the bolt
 
 local clock = os.clock
+local parent = workspace.CurrentCamera
 
 local function DiscretePulse(input, s, k, f, t, min, max) --input should be between 0 and 1. See https://www.desmos.com/calculator/hg5h4fpfim for demonstration.
 	return math.clamp(k / (2 * f) - math.abs((input - t * s + 0.5 * k) / f), min, max)
@@ -21,6 +22,7 @@ end
 local BoltPart = Instance.new("Part") --Template primitive that will make up the entire bolt
 BoltPart.TopSurface, BoltPart.BottomSurface = 0, 0
 BoltPart.Anchored, BoltPart.CanCollide = true, false
+BoltPart.Locked, BoltPart.CastShadow = true, false
 BoltPart.Shape = "Cylinder"
 BoltPart.Name = "BoltPart"
 BoltPart.Material = Enum.Material.Neon
@@ -46,10 +48,12 @@ local NewBolt = LightningBolt.new(A1, A2, 40)
 
 function LightningBolt.new(Attachment0, Attachment1, PartCount)
 	local self = setmetatable({}, LightningBolt)
+	PartCount = PartCount or 30
 
 	--*Main (default) Properties--
 
-	--Bolt Appearance Properties--
+	--Bolt Appearance Properties
+
 	self.Enabled = true --Hides bolt without destroying any parts when false
 	self.Attachment0, self.Attachment1 = Attachment0, Attachment1 --Bolt originates from Attachment0 and ends at Attachment1
 	self.CurveSize0, self.CurveSize1 = 0, 0 --Works similarly to beams. See https://dk135eecbplh9.cloudfront.net/assets/blt160ad3fdeadd4ff2/BeamCurve1.png
@@ -59,7 +63,8 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 	self.Thickness = 1 --The thickness of the bolt
 	self.MinThicknessMultiplier, self.MaxThicknessMultiplier = 0.2, 1 --Multiplies Thickness value by a fluctuating random value between MinThicknessMultiplier and MaxThicknessMultiplier along the Bolt
 
-	--Bolt Kinetic Properties--
+	--Bolt Kinetic Properties
+
 	--Allows for fading in (or out) of the bolt with time. Can also create a "projectile" bolt
 	--Recommend setting AnimationSpeed to 0 if used as projectile (for better aesthetics)
 	--Works by passing a "wave" function which travels from left to right where the wave height represents opacity (opacity being 1 - Transparency)
@@ -70,33 +75,19 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 	self.FadeLength = 0.2 --See https://www.desmos.com/calculator/hg5h4fpfim
 	self.ContractFrom = 0.5 --Parts shorten or grow once their Transparency exceeds this value. Set to a value above 1 to turn effect off. See https://imgur.com/OChA441
 
-	--Bolt Color Properties--
+	--Bolt Color Properties
+
 	self.Color = Color3.new(1, 1, 1) --Can be a Color3 or ColorSequence
 	self.ColorOffsetSpeed = 3 --Sets speed at which ColorSequence travels along Bolt
 
 	--*
 
-	self.Parts = {} --The BoltParts which make up the Bolt
+	self._Parts = {} --The BoltParts which make up the Bolt
 
-	local a0, a1 = Attachment0, Attachment1
-	local parent = workspace.CurrentCamera
-	local p0, p1, p2, p3 = a0.WorldPosition, a0.WorldPosition
-		+ a0.WorldAxis * self.CurveSize0, a1.WorldPosition
-		- a1.WorldAxis * self.CurveSize1, a1.WorldPosition
-	local PrevPoint, bezier0 = p0, p0
-	local MainBranchN = PartCount or 30
-
-	for i = 1, MainBranchN do
-		local t1 = i / MainBranchN
-		local bezier1 = CubicBezier(p0, p1, p2, p3, t1)
-		local NextPoint = i ~= MainBranchN and (CFrame.lookAt(bezier0, bezier1)).Position or bezier1
+	for i = 1, PartCount do
 		local BPart = BoltPart:Clone()
-		BPart.Size = Vector3.new((NextPoint - PrevPoint).Magnitude, 0, 0)
-		BPart.CFrame = CFrame.lookAt((PrevPoint + NextPoint) * 0.5, NextPoint) * xInverse
 		BPart.Parent = parent
-		BPart.Locked, BPart.CastShadow = true, false
-		self.Parts[i] = BPart
-		PrevPoint, bezier0 = NextPoint, bezier1
+		self._Parts[i] = BPart
 	end
 
 	if typeof(self.Color) == "Color3" then --Overload _UpdateColor() if Color3 supplied
@@ -105,22 +96,22 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 		end
 	end
 
-	self.PartsHidden = false
-	self.DisabledTransparency = 1
-	self.StartT = clock()
-	self.RanNum = math.random() * 100
-	self.RefIndex = #ActiveBranches + 1
+	self._PartsHidden = false
+	self._DisabledTransparency = 1
+	self._StartT = clock()
+	self._RanNum = math.random() * 100
+	self._RefIndex = #ActiveBranches + 1
 
-	ActiveBranches[self.RefIndex] = self
+	ActiveBranches[self._RefIndex] = self
 
 	return self
 end
 
 function LightningBolt:Destroy()
-	ActiveBranches[self.RefIndex] = nil
+	ActiveBranches[self._RefIndex] = nil
 
-	for i = 1, #self.Parts do
-		self.Parts[i]:Destroy()
+	for i = 1, #self._Parts do
+		self._Parts[i]:Destroy()
 
 		if i % 100 == 0 then
 			wait()
@@ -140,7 +131,7 @@ function LightningBolt:_UpdateGeometry(
 	NextPoint
 )
 	local contractf = 1 - self.ContractFrom
-	local PartsN = #self.Parts
+	local PartsN = #self._Parts
 	local Thickness = self.Thickness * ThicknessNoiseMultiplier * Opacity
 
 	if Opacity > contractf then
@@ -164,7 +155,7 @@ end
 
 function LightningBolt:_UpdateColor(BPart, PercentAlongBolt, TimePassed)
 	--Assume ColorSequence was supplied
-	local t1 = (self.RanNum + PercentAlongBolt - TimePassed * self.ColorOffsetSpeed) % 1
+	local t1 = (self._RanNum + PercentAlongBolt - TimePassed * self.ColorOffsetSpeed) % 1
 	local keypoints = self.Color.Keypoints
 	for t = 1, #keypoints - 1 do
 		if keypoints[t].Time < t1 and t1 < keypoints[t + 1].Time then
@@ -179,20 +170,20 @@ end
 
 function LightningBolt:_Disable()
 	self.Enabled = false
-	for _, BPart in ipairs(self.Parts) do
-		BPart.Transparency = self.DisabledTransparency
+	for _, BPart in ipairs(self._Parts) do
+		BPart.Transparency = self._DisabledTransparency
 	end
 end
 
 game:GetService("RunService").Heartbeat:Connect(function()
 	for _, ThisBranch in pairs(ActiveBranches) do
 		if ThisBranch.Enabled == true then
-			ThisBranch.PartsHidden = false
+			ThisBranch._PartsHidden = false
 			local MinOpa, MaxOpa = 1 - ThisBranch.MaxTransparency, 1 - ThisBranch.MinTransparency
 			local MinRadius, MaxRadius = ThisBranch.MinRadius, ThisBranch.MaxRadius
-			local Parts = ThisBranch.Parts
+			local Parts = ThisBranch._Parts
 			local PartsN = #Parts
-			local RanNum = ThisBranch.RanNum
+			local RanNum = ThisBranch._RanNum
 			local spd = ThisBranch.AnimationSpeed
 			local freq = ThisBranch.Frequency
 			local MinThick, MaxThick = ThisBranch.MinThicknessMultiplier, ThisBranch.MaxThicknessMultiplier
@@ -201,7 +192,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			local p0, p1, p2, p3 = a0.WorldPosition, a0.WorldPosition
 				+ a0.WorldAxis * CurveSize0, a1.WorldPosition
 				- a1.WorldAxis * CurveSize1, a1.WorldPosition
-			local timePassed = clock() - ThisBranch.StartT
+			local timePassed = clock() - ThisBranch._StartT
 			local PulseLength, PulseSpeed, FadeLength =
 				ThisBranch.PulseLength, ThisBranch.PulseSpeed, ThisBranch.FadeLength
 			local PrevPoint, bezier0 = p0, p0
@@ -209,7 +200,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			if timePassed < (PulseLength + 1) / PulseSpeed then
 				for i = 1, PartsN do
 					local BPart = Parts[i]
-					local t1 = i / PartsN --percentAlongBolt
+					local t1 = i / PartsN --PercentAlongBolt
 					local Opacity = DiscretePulse(t1, PulseSpeed, PulseLength, FadeLength, timePassed, MinOpa, MaxOpa)
 					local bezier1 = CubicBezier(p0, p1, p2, p3, t1)
 					local time = -timePassed --minus to ensure bolt waves travel from a0 to a1
@@ -241,8 +232,8 @@ game:GetService("RunService").Heartbeat:Connect(function()
 				ThisBranch:Destroy()
 			end
 		else --Enabled = false
-			if ThisBranch.PartsHidden == false then
-				ThisBranch.PartsHidden = true
+			if ThisBranch._PartsHidden == false then
+				ThisBranch._PartsHidden = true
 				ThisBranch:_Disable()
 			end
 		end
