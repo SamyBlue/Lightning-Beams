@@ -4,8 +4,17 @@
 --All properties update in real-time except PartCount which requires a new LightningBolt to change
 --i.e. You can change a property at any time after a LightningBolt instance is created and it will still update the look of the bolt
 
+local PARTS_IN_CACHE = 1000 --Recommend setting higher if you intend to use LightningSparks
 local clock = os.clock
+local workspace = game:GetService("Workspace")
 local parent = workspace.CurrentCamera
+
+--*Part Cache Setup
+--New parts automatically get added to cache if more parts are requested for use where a warning is thrown
+
+
+
+--*
 
 local function DiscretePulse(input, s, k, f, t, min, max) --input should be between 0 and 1. See https://www.desmos.com/calculator/hg5h4fpfim for demonstration.
 	return math.clamp(k / (2 * f) - math.abs((input - t * s + 0.5 * k) / f), min, max)
