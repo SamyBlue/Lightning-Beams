@@ -255,10 +255,10 @@ game:GetService("RunService").Heartbeat:Connect(function()
 					local PercentAlongBolt = i / PartsN
 
 					--Compute noisy inputs
-					local input, input2 = (spd * -time)
+					local input, input2 = (spd * -TimePassed)
 						+ freq * 10 * PercentAlongBolt
 						- 0.2
-						+ RanNum * 4, 5 * ((spd * 0.01 * -time) / 10 + freq * PercentAlongBolt)
+						+ RanNum * 4, 5 * ((spd * 0.01 * -TimePassed) / 10 + freq * PercentAlongBolt)
 						+ RanNum * 4
 					local noise0 = NoiseBetween(5 * input, 1.5, 5 * 0.2 * input2, 0, 0.1 * 2 * math.pi)
 						+ NoiseBetween(0.5 * input, 1.5, 0.5 * 0.2 * input2, 0, 0.9 * 2 * math.pi)
