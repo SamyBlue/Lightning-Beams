@@ -92,7 +92,6 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 	self.PulseLength = 1000000
 	self.FadeLength = 0.2
 	self.ContractFrom = 0.5 --Parts shorten or grow once their Transparency exceeds this value. Set to a value above 1 to turn effect off. See https://imgur.com/OChA441
-	self.Lifetime = (self.PulseLength + 1) / self.PulseSpeed
 
 	--Bolt Color Properties
 
@@ -237,6 +236,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			local MinThick, MaxThick = ThisBranch.MinThicknessMultiplier, ThisBranch.MaxThicknessMultiplier
 			local TimePassed = clock() - ThisBranch._StartT
 			local SpaceCurveFunction = ThisBranch.SpaceCurveFunction
+			local Lifetime = (ThisBranch.PulseLength + 1) / ThisBranch.PulseSpeed
 
 			--Extract control points
 			local a0, a1, CurveSize0, CurveSize1 =
@@ -249,7 +249,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			local PrevPoint, bezier0 = p0, p0
 
 			--Update
-			if TimePassed < ThisBranch.Lifetime then
+			if TimePassed < Lifetime then
 				for i = 1, PartsN do
 					local BPart = Parts[i]
 					local PercentAlongBolt = i / PartsN
