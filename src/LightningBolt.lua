@@ -78,7 +78,6 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 	self.AnimationSpeed = 7 --Governs how fast the bolt oscillates (i.e. how fast the fluctuating wave travels along bolt)
 	self.Thickness = 1 --The thickness of the bolt
 	self.MinThicknessMultiplier, self.MaxThicknessMultiplier = 0.2, 1 --Multiplies Thickness value by a fluctuating random value between MinThicknessMultiplier and MaxThicknessMultiplier along the Bolt
-	self.Lifetime = (self.PulseLength + 1) / self.PulseSpeed
 
 	--Bolt Kinetic Properties
 
@@ -93,6 +92,7 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 	self.PulseLength = 1000000
 	self.FadeLength = 0.2
 	self.ContractFrom = 0.5 --Parts shorten or grow once their Transparency exceeds this value. Set to a value above 1 to turn effect off. See https://imgur.com/OChA441
+	self.Lifetime = (self.PulseLength + 1) / self.PulseSpeed
 
 	--Bolt Color Properties
 
