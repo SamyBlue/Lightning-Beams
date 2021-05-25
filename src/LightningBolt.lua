@@ -1,8 +1,10 @@
---Procedural Lightning Module. By Quasiduck
---License: https://github.com/SamyBlue/Lightning-Beams/blob/main/LICENSE
---See README for guide on how to use or scroll down to see all properties in LightningBolt.new
---All properties update in real-time except PartCount which requires a new LightningBolt to change
---i.e. You can change a property at any time after a LightningBolt instance is created and it will still update the look of the bolt
+--[[
+	Procedural Lightning Module. By Quasiduck
+	License: https://github.com/SamyBlue/Lightning-Beams/blob/main/LICENSE
+	See README for guide on how to use or scroll down to see all properties in LightningBolt.new
+	All properties update in real-time except PartCount which requires a new LightningBolt to change
+	i.e. You can change a property at any time after a LightningBolt instance is created and it will still update the look of the bolt
+--]]
 
 local PARTS_IN_CACHE = 1000 --Recommend setting higher if you intend to use LightningSparks
 local clock = os.clock
@@ -51,10 +53,10 @@ LightningBolt.__index = LightningBolt
 
 --Small tip: You don't need to use actual Roblox Attachments below. You can also create "fake" ones as follows:
 --[[
-local A1, A2 = {}, {}
-A1.WorldPosition, A1.WorldAxis = chosenPos1, chosenAxis1
-A2.WorldPosition, A2.WorldAxis = chosenPos2, chosenAxis2
-local NewBolt = LightningBolt.new(A1, A2, 40)
+	local A1, A2 = {}, {}
+	A1.WorldPosition, A1.WorldAxis = chosenPos1, chosenAxis1
+	A2.WorldPosition, A2.WorldAxis = chosenPos2, chosenAxis2
+	local NewBolt = LightningBolt.new(A1, A2, 40)
 --]]
 
 function LightningBolt.new(Attachment0, Attachment1, PartCount)
@@ -67,7 +69,7 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 
 	self.Enabled = true --Hides bolt without removing any parts when false
 	self.Attachment0, self.Attachment1 = Attachment0, Attachment1 --Bolt originates from Attachment0 and ends at Attachment1
-	self.CurveSize0, self.CurveSize1 = 0, 0 --Works similarly to beams. See https://dk135eecbplh9.cloudfront.net/assets/blt160ad3fdeadd4ff2/BeamCurve1.png
+	self.CurveSize0, self.CurveSize1 = 0, 0 --Works similarly to roblox beams. See https://dk135eecbplh9.cloudfront.net/assets/blt160ad3fdeadd4ff2/BeamCurve1.png
 	self.MinRadius, self.MaxRadius = 0, 2.4 --Governs the amplitude of fluctuations throughout the bolt
 	self.Frequency = 1 --Governs the frequency of fluctuations throughout the bolt. Lower this to remove jittery-looking lightning
 	self.AnimationSpeed = 7 --Governs how fast the bolt oscillates (i.e. how fast the fluctuating wave travels along bolt)
@@ -76,14 +78,16 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 
 	--Bolt Kinetic Properties
 
-	--Allows for fading in (or out) of the bolt with time. Can also create a "projectile" bolt
-	--Recommend setting AnimationSpeed to 0 if used as projectile (for better aesthetics)
-	--Works by passing a "wave" function which travels from left to right where the wave height represents opacity (opacity being 1 - Transparency)
-	--See https://www.desmos.com/calculator/hg5h4fpfim to help customise the shape of the wave with the below properties
-	self.MinTransparency, self.MaxTransparency = 0, 1 --See https://www.desmos.com/calculator/hg5h4fpfim
-	self.PulseSpeed = 2 --Bolt arrives at Attachment1 1/PulseSpeed seconds later. See https://www.desmos.com/calculator/hg5h4fpfim
-	self.PulseLength = 1000000 --See https://www.desmos.com/calculator/hg5h4fpfim
-	self.FadeLength = 0.2 --See https://www.desmos.com/calculator/hg5h4fpfim
+	--[[
+		Allows for fading in (or out) of the bolt with time. Can also create a "projectile" bolt
+		Recommend setting AnimationSpeed to 0 if used as projectile (for better aesthetics)
+		Works by passing a "wave" function which travels from left to right where the wave height represents opacity (opacity being 1 - Transparency)
+		See https://www.desmos.com/calculator/hg5h4fpfim to help customise the shape of the wave with the below properties
+	--]]
+	self.MinTransparency, self.MaxTransparency = 0, 1
+	self.PulseSpeed = 2 --Bolt arrives at Attachment1 1/PulseSpeed seconds later
+	self.PulseLength = 1000000
+	self.FadeLength = 0.2
 	self.ContractFrom = 0.5 --Parts shorten or grow once their Transparency exceeds this value. Set to a value above 1 to turn effect off. See https://imgur.com/OChA441
 
 	--Bolt Color Properties
@@ -91,6 +95,26 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 	self.Color = Color3.new(1, 1, 1) --Can be a Color3 or ColorSequence
 	self.ColorOffsetSpeed = 3 --Sets speed at which ColorSequence travels along Bolt
 
+	--*
+
+	--*Advanced Properties--
+
+	--[[
+		Allows you to pass a custom space curve for the bolt to be defined along
+		Constraints: 
+			-First input passed must be a parameter representing PercentAlongBolt between values 0 and 1
+		Example: self.SpaceCurveFunction = VivianiCurve(PercentAlongBolt, ...)
+	--]]
+	self.SpaceCurveFunction = CubicBezier
+
+	--[[
+		Allows you to pass a custom opacity profile which controls the opacity along the bolt
+		Constraints: 
+			-First input passed must be a parameter representing PercentAlongBolt between values 0 and 1
+			-Second input passed must be a parameter representing TimePassed since instantiation 
+		Example: self.OpacityProfileFunction = MovingSineWave(PercentAlongBolt, TimePassed, ...)
+	--]]
+	self.OpacityProfileFunction = DiscretePulse
 	--*
 
 	--! Private vars are prefixed with an underscore (e.g. self._Parts) and should be ignored / should not be changed manually
@@ -181,7 +205,7 @@ function LightningBolt:_Disable()
 end
 
 game:GetService("RunService").Heartbeat:Connect(function()
-	debug.profilebegin("LightningBolt")
+	debug.profilebegin("LightningBolt") --Create performance profile
 
 	for _, ThisBranch in pairs(ActiveBranches) do
 		if ThisBranch.Enabled == true then
@@ -199,27 +223,34 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			local p0, p1, p2, p3 = a0.WorldPosition, a0.WorldPosition
 				+ a0.WorldAxis * CurveSize0, a1.WorldPosition
 				- a1.WorldAxis * CurveSize1, a1.WorldPosition
-			local timePassed = clock() - ThisBranch._StartT
+			local TimePassed = clock() - ThisBranch._StartT
 			local PulseLength, PulseSpeed, FadeLength =
 				ThisBranch.PulseLength, ThisBranch.PulseSpeed, ThisBranch.FadeLength
 			local PrevPoint, bezier0 = p0, p0
 
-			if timePassed < (PulseLength + 1) / PulseSpeed then
+			if TimePassed < (PulseLength + 1) / PulseSpeed then
 				for i = 1, PartsN do
 					local BPart = Parts[i]
-					local t1 = i / PartsN --PercentAlongBolt
-					local Opacity = DiscretePulse(t1, PulseSpeed, PulseLength, FadeLength, timePassed, MinOpa, MaxOpa)
-					local bezier1 = CubicBezier(p0, p1, p2, p3, t1)
-					local time = -timePassed --minus to ensure bolt waves travel from a0 to a1
-					local input, input2 = (spd * time)
-						+ freq * 10 * t1
+					local PercentAlongBolt = i / PartsN
+					local Opacity = DiscretePulse(
+						PercentAlongBolt,
+						PulseSpeed,
+						PulseLength,
+						FadeLength,
+						TimePassed,
+						MinOpa,
+						MaxOpa
+					)
+					local bezier1 = CubicBezier(p0, p1, p2, p3, PercentAlongBolt)
+					local input, input2 = (spd * -time)
+						+ freq * 10 * PercentAlongBolt
 						- 0.2
-						+ RanNum * 4, 5 * ((spd * 0.01 * time) / 10 + freq * t1)
+						+ RanNum * 4, 5 * ((spd * 0.01 * -time) / 10 + freq * PercentAlongBolt)
 						+ RanNum * 4
 					local noise0 = NoiseBetween(5 * input, 1.5, 5 * 0.2 * input2, 0, 0.1 * 2 * math.pi)
 						+ NoiseBetween(0.5 * input, 1.5, 0.5 * 0.2 * input2, 0, 0.9 * 2 * math.pi)
 					local noise1 = NoiseBetween(3.4, input2, input, MinRadius, MaxRadius)
-						* math.exp(-5000 * (t1 - 0.5) ^ 10)
+						* math.exp(-5000 * (PercentAlongBolt - 0.5) ^ 10)
 					local thicknessNoise = NoiseBetween(2.3, input2, input, MinThick, MaxThick)
 					local NextPoint = i ~= PartsN
 							and (CFrame.new(bezier0, bezier1) * CFrame.Angles(0, 0, noise0) * CFrame.Angles(
@@ -229,9 +260,17 @@ game:GetService("RunService").Heartbeat:Connect(function()
 						) * CFrame.new(0, 0, -noise1)).Position
 						or bezier1
 
-					ThisBranch:_UpdateGeometry(BPart, t1, timePassed, Opacity, thicknessNoise, PrevPoint, NextPoint)
+					ThisBranch:_UpdateGeometry(
+						BPart,
+						PercentAlongBolt,
+						TimePassed,
+						Opacity,
+						thicknessNoise,
+						PrevPoint,
+						NextPoint
+					)
 
-					ThisBranch:_UpdateColor(BPart, t1, timePassed)
+					ThisBranch:_UpdateColor(BPart, PercentAlongBolt, TimePassed)
 
 					PrevPoint, bezier0 = NextPoint, bezier1
 				end
