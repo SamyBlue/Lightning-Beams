@@ -30,16 +30,19 @@ LightningCache:SetCacheParent(parent)
 
 --*
 
-local function DiscretePulse(input, s, k, f, t, min, max) --input should be between 0 and 1. See https://www.desmos.com/calculator/hg5h4fpfim for demonstration.
-	return math.clamp(k / (2 * f) - math.abs((input - t * s + 0.5 * k) / f), min, max)
+local function CubicBezier(PercentAlongBolt, p0, p1, p2, p3)
+	return p0 * (1 - PercentAlongBolt) ^ 3
+		+ p1 * 3 * PercentAlongBolt * (1 - PercentAlongBolt) ^ 2
+		+ p2 * 3 * (1 - PercentAlongBolt) * PercentAlongBolt ^ 2
+		+ p3 * PercentAlongBolt ^ 3
+end
+
+local function DiscretePulse(PercentAlongBolt, TimePassed, s, k, f, min, max) --See https://www.desmos.com/calculator/hg5h4fpfim for demonstration
+	return math.clamp(k / (2 * f) - math.abs((PercentAlongBolt - TimePassed * s + 0.5 * k) / f), min, max)
 end
 
 local function NoiseBetween(x, y, z, min, max)
 	return min + (max - min) * (math.noise(x, y, z) + 0.5)
-end
-
-local function CubicBezier(p0, p1, p2, p3, t)
-	return p0 * (1 - t) ^ 3 + p1 * 3 * t * (1 - t) ^ 2 + p2 * 3 * (1 - t) * t ^ 2 + p3 * t ^ 3
 end
 
 local xInverse = CFrame.lookAt(Vector3.new(), Vector3.new(1, 0, 0)):inverse()
@@ -103,7 +106,7 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 		Allows you to pass a custom space curve for the bolt to be defined along
 		Constraints: 
 			-First input passed must be a parameter representing PercentAlongBolt between values 0 and 1
-		Example: self.SpaceCurveFunction = VivianiCurve(PercentAlongBolt, ...)
+		Example: self.SpaceCurveFunction = VivianiCurve(PercentAlongBolt)
 	--]]
 	self.SpaceCurveFunction = CubicBezier
 
@@ -112,12 +115,12 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 		Constraints: 
 			-First input passed must be a parameter representing PercentAlongBolt between values 0 and 1
 			-Second input passed must be a parameter representing TimePassed since instantiation 
-		Example: self.OpacityProfileFunction = MovingSineWave(PercentAlongBolt, TimePassed, ...)
+		Example: self.OpacityProfileFunction = MovingSineWave(PercentAlongBolt, TimePassed)
 	--]]
 	self.OpacityProfileFunction = DiscretePulse
 	--*
 
-	--! Private vars are prefixed with an underscore (e.g. self._Parts) and should be ignored / should not be changed manually
+	--! Private vars are prefixed with an underscore (e.g. self._Parts) and should not be changed manually
 
 	self._Parts = {} --The BoltParts which make up the Bolt
 
@@ -179,7 +182,6 @@ function LightningBolt:_UpdateGeometry(
 end
 
 function LightningBolt:_UpdateColor(BPart, PercentAlongBolt, TimePassed)
-	--Assume ColorSequence was supplied
 	if typeof(self.Color) == "Color3" then
 		BPart.Color = self.Color
 	else --ColorSequence
@@ -227,21 +229,23 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			local PulseLength, PulseSpeed, FadeLength =
 				ThisBranch.PulseLength, ThisBranch.PulseSpeed, ThisBranch.FadeLength
 			local PrevPoint, bezier0 = p0, p0
+			local SpaceCurveFunction, OpacityProfileFunction =
+				ThisBranch.SpaceCurveFunction, ThisBranch.OpacityProfileFunction
 
 			if TimePassed < (PulseLength + 1) / PulseSpeed then
 				for i = 1, PartsN do
 					local BPart = Parts[i]
 					local PercentAlongBolt = i / PartsN
-					local Opacity = DiscretePulse(
+					local Opacity = OpacityProfileFunction(
 						PercentAlongBolt,
+						TimePassed,
 						PulseSpeed,
 						PulseLength,
 						FadeLength,
-						TimePassed,
 						MinOpa,
 						MaxOpa
 					)
-					local bezier1 = CubicBezier(p0, p1, p2, p3, PercentAlongBolt)
+					local bezier1 = SpaceCurveFunction(PercentAlongBolt, p0, p1, p2, p3)
 					local input, input2 = (spd * -time)
 						+ freq * 10 * PercentAlongBolt
 						- 0.2
