@@ -1,5 +1,5 @@
 --[[
-	Procedural Lightning Module. By Quasiduck
+	Procedural Lightning Effect Module. By Quasiduck
 	License: https://github.com/SamyBlue/Lightning-Beams/blob/main/LICENSE
 	See README for guide on how to use or scroll down to see all properties in LightningBolt.new
 	All properties update in real-time except PartCount which requires a new LightningBolt to change
@@ -78,6 +78,7 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 	self.AnimationSpeed = 7 --Governs how fast the bolt oscillates (i.e. how fast the fluctuating wave travels along bolt)
 	self.Thickness = 1 --The thickness of the bolt
 	self.MinThicknessMultiplier, self.MaxThicknessMultiplier = 0.2, 1 --Multiplies Thickness value by a fluctuating random value between MinThicknessMultiplier and MaxThicknessMultiplier along the Bolt
+	self.Lifetime = (self.PulseLength + 1) / self.PulseSpeed
 
 	--Bolt Kinetic Properties
 
@@ -153,15 +154,28 @@ function LightningBolt:_UpdateGeometry(
 	BPart,
 	PercentAlongBolt,
 	TimePassed,
-	Opacity,
 	ThicknessNoiseMultiplier,
 	PrevPoint,
 	NextPoint
 )
-	local contractf = 1 - self.ContractFrom
-	local PartsN = #self._Parts
+	--Compute opacity for this particular section
+	local MinOpa, MaxOpa = 1 - self.MaxTransparency, 1 - self.MinTransparency
+	local Opacity = self.OpacityProfileFunction(
+		PercentAlongBolt,
+		TimePassed,
+		self.PulseSpeed,
+		self.PulseLength,
+		self.FadeLength,
+		MinOpa,
+		MaxOpa
+	)
+
+	--Compute thickness for this particular section
 	local Thickness = self.Thickness * ThicknessNoiseMultiplier * Opacity
 
+	--Compute + update sizing and orientation of this particular section
+	local contractf = 1 - self.ContractFrom
+	local PartsN = #self._Parts
 	if Opacity > contractf then
 		BPart.Size = Vector3.new((NextPoint - PrevPoint).Magnitude, Thickness, Thickness)
 		BPart.CFrame = CFrame.lookAt((PrevPoint + NextPoint) * 0.5, NextPoint) * xInverse
@@ -187,7 +201,7 @@ function LightningBolt:_UpdateColor(BPart, PercentAlongBolt, TimePassed)
 	else --ColorSequence
 		local t1 = (self._RanNum + PercentAlongBolt - TimePassed * self.ColorOffsetSpeed) % 1
 		local keypoints = self.Color.Keypoints
-		for i = 1, #keypoints - 1 do --convert colorsequence onto lightning
+		for i = 1, #keypoints - 1 do
 			if keypoints[i].Time < t1 and t1 < keypoints[i + 1].Time then
 				BPart.Color = keypoints[i].Value:lerp(
 					keypoints[i + 1].Value,
@@ -212,7 +226,8 @@ game:GetService("RunService").Heartbeat:Connect(function()
 	for _, ThisBranch in pairs(ActiveBranches) do
 		if ThisBranch.Enabled == true then
 			ThisBranch._PartsHidden = false
-			local MinOpa, MaxOpa = 1 - ThisBranch.MaxTransparency, 1 - ThisBranch.MinTransparency
+
+			--Extract important variables
 			local MinRadius, MaxRadius = ThisBranch.MinRadius, ThisBranch.MaxRadius
 			local Parts = ThisBranch._Parts
 			local PartsN = #Parts
@@ -220,32 +235,26 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			local spd = ThisBranch.AnimationSpeed
 			local freq = ThisBranch.Frequency
 			local MinThick, MaxThick = ThisBranch.MinThicknessMultiplier, ThisBranch.MaxThicknessMultiplier
+			local TimePassed = clock() - ThisBranch._StartT
+			local SpaceCurveFunction = ThisBranch.SpaceCurveFunction
+
+			--Extract control points
 			local a0, a1, CurveSize0, CurveSize1 =
 				ThisBranch.Attachment0, ThisBranch.Attachment1, ThisBranch.CurveSize0, ThisBranch.CurveSize1
 			local p0, p1, p2, p3 = a0.WorldPosition, a0.WorldPosition
 				+ a0.WorldAxis * CurveSize0, a1.WorldPosition
 				- a1.WorldAxis * CurveSize1, a1.WorldPosition
-			local TimePassed = clock() - ThisBranch._StartT
-			local PulseLength, PulseSpeed, FadeLength =
-				ThisBranch.PulseLength, ThisBranch.PulseSpeed, ThisBranch.FadeLength
-			local PrevPoint, bezier0 = p0, p0
-			local SpaceCurveFunction, OpacityProfileFunction =
-				ThisBranch.SpaceCurveFunction, ThisBranch.OpacityProfileFunction
 
-			if TimePassed < (PulseLength + 1) / PulseSpeed then
+			--Initialise iterative scheme for generating points along space curve
+			local PrevPoint, bezier0 = p0, p0
+
+			--Update
+			if TimePassed < ThisBranch.Lifetime then
 				for i = 1, PartsN do
 					local BPart = Parts[i]
 					local PercentAlongBolt = i / PartsN
-					local Opacity = OpacityProfileFunction(
-						PercentAlongBolt,
-						TimePassed,
-						PulseSpeed,
-						PulseLength,
-						FadeLength,
-						MinOpa,
-						MaxOpa
-					)
-					local bezier1 = SpaceCurveFunction(PercentAlongBolt, p0, p1, p2, p3)
+
+					--Compute noisy inputs
 					local input, input2 = (spd * -time)
 						+ freq * 10 * PercentAlongBolt
 						- 0.2
@@ -256,6 +265,11 @@ game:GetService("RunService").Heartbeat:Connect(function()
 					local noise1 = NoiseBetween(3.4, input2, input, MinRadius, MaxRadius)
 						* math.exp(-5000 * (PercentAlongBolt - 0.5) ^ 10)
 					local thicknessNoise = NoiseBetween(2.3, input2, input, MinThick, MaxThick)
+
+					--Find next point along space curve
+					local bezier1 = SpaceCurveFunction(PercentAlongBolt, p0, p1, p2, p3)
+
+					--Find next point along bolt
 					local NextPoint = i ~= PartsN
 							and (CFrame.new(bezier0, bezier1) * CFrame.Angles(0, 0, noise0) * CFrame.Angles(
 							math.acos(math.clamp(NoiseBetween(input2, input, 2.7, offsetAngle, 1), -1, 1)),
@@ -264,15 +278,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
 						) * CFrame.new(0, 0, -noise1)).Position
 						or bezier1
 
-					ThisBranch:_UpdateGeometry(
-						BPart,
-						PercentAlongBolt,
-						TimePassed,
-						Opacity,
-						thicknessNoise,
-						PrevPoint,
-						NextPoint
-					)
+					ThisBranch:_UpdateGeometry(BPart, PercentAlongBolt, TimePassed, thicknessNoise, PrevPoint, NextPoint)
 
 					ThisBranch:_UpdateColor(BPart, PercentAlongBolt, TimePassed)
 
