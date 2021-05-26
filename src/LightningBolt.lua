@@ -119,6 +119,15 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 		Note: You may want to set self.ContractFrom to a value above 1 if you pass a custom opacity profile as contraction was designed to work with DiscretePulse
 	--]]
 	self.OpacityProfileFunction = DiscretePulse
+
+	--[[
+		Allows you to pass a custom radial profile which controls the radius of control points along the bolt
+		Constraints: 
+			-First input passed must be a parameter representing PercentAlongBolt between values 0 and 1
+	--]]
+	self.RadialProfileFunction = function(PercentAlongBolt)
+		return math.exp(-5000 * (PercentAlongBolt - 0.5) ^ 10)
+	end
 	--*
 
 	--! Private vars are prefixed with an underscore (e.g. self._Parts) and should not be changed manually
@@ -236,7 +245,8 @@ game:GetService("RunService").Heartbeat:Connect(function()
 			local freq = ThisBranch.Frequency
 			local MinThick, MaxThick = ThisBranch.MinThicknessMultiplier, ThisBranch.MaxThicknessMultiplier
 			local TimePassed = clock() - ThisBranch._StartT
-			local SpaceCurveFunction = ThisBranch.SpaceCurveFunction
+			local SpaceCurveFunction, RadialProfileFunction =
+				ThisBranch.SpaceCurveFunction, ThisBranch.RadialProfileFunction
 			local Lifetime = (ThisBranch.PulseLength + 1) / ThisBranch.PulseSpeed
 
 			--Extract control points
@@ -265,7 +275,7 @@ game:GetService("RunService").Heartbeat:Connect(function()
 					local noise0 = NoiseBetween(5 * input, 1.5, 5 * 0.2 * input2, 0, 0.1 * 2 * math.pi)
 						+ NoiseBetween(0.5 * input, 1.5, 0.5 * 0.2 * input2, 0, 0.9 * 2 * math.pi)
 					local noise1 = NoiseBetween(3.4, input2, input, MinRadius, MaxRadius)
-						* math.exp(-5000 * (PercentAlongBolt - 0.5) ^ 10)
+						* RadialProfileFunction(PercentAlongBolt)
 					local thicknessNoise = NoiseBetween(2.3, input2, input, MinThick, MaxThick)
 
 					--Find next point along space curve
