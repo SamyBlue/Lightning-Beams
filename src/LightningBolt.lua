@@ -8,7 +8,7 @@
 
 local PARTS_IN_CACHE = 1000 --Recommend setting higher if you intend to use LightningSparks
 local clock = os.clock
-local workspace = game:GetService("Workspace")
+local workspace, RunService = game:GetService("Workspace"), game:GetService("RunService")
 local parent = workspace.CurrentCamera
 
 --*Part Cache Setup
@@ -39,6 +39,10 @@ end
 
 local function DiscretePulse(PercentAlongBolt, TimePassed, s, k, f, min, max) --See https://www.desmos.com/calculator/hg5h4fpfim for demonstration
 	return math.clamp(k / (2 * f) - math.abs((PercentAlongBolt - TimePassed * s + 0.5 * k) / f), min, max)
+end
+
+local function ExtrudeCenter(PercentAlongBolt)
+	return math.exp(-5000 * (PercentAlongBolt - 0.5) ^ 10)
 end
 
 local function NoiseBetween(x, y, z, min, max)
@@ -125,9 +129,7 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 		Constraints: 
 			-First input passed must be a parameter representing PercentAlongBolt between values 0 and 1
 	--]]
-	self.RadialProfileFunction = function(PercentAlongBolt)
-		return math.exp(-5000 * (PercentAlongBolt - 0.5) ^ 10)
-	end
+	self.RadialProfileFunction = ExtrudeCenter
 	--*
 
 	--! Private vars are prefixed with an underscore (e.g. self._Parts) and should not be changed manually
@@ -157,6 +159,30 @@ function LightningBolt:Destroy()
 	end
 
 	self = nil
+end
+
+function LightningBolt:DestroyDissipate(timeLength) --works with self.ContractFrom property to create a dissipation effect
+	local DissipateStartT = clock()
+	local start, goal = self.MinTransparency, (1 - self.ContractFrom) - 1 / (#self._Parts * self.FadeLength)
+
+	local DissipateLoop = RunService.Heartbeat:Connect(function()
+		local TimeSinceDissipate = clock() - DissipateStartT
+
+		if TimeSinceDissipate < timeLength then
+			self.MinTransparency = start + (goal - start) * (TimeSinceDissipate / timeLength) ^ 0.2
+		else
+			--Destroy Bolt
+			local TimePassed = clock() - self._StartT
+			local Lifetime = (self.PulseLength + 1) / self.PulseSpeed
+
+			if TimePassed < Lifetime then --prevents Destroy()ing twice
+				self:Destroy()
+			end
+
+			--Disconnect Loop
+			DissipateLoop:Disconnect()
+		end
+	end)
 end
 
 function LightningBolt:_UpdateGeometry(
@@ -229,7 +255,7 @@ function LightningBolt:_Disable()
 	end
 end
 
-game:GetService("RunService").Heartbeat:Connect(function()
+RunService.Heartbeat:Connect(function()
 	debug.profilebegin("LightningBolt") --Create performance profile
 
 	for _, ThisBranch in pairs(ActiveBranches) do
