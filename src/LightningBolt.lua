@@ -161,17 +161,28 @@ function LightningBolt:Destroy()
 	self = nil
 end
 
-function LightningBolt:DestroyDissipate(TimeLength) --works with self.ContractFrom property to create a dissipation effect
-	TimeLength = TimeLength or 0.1
+function LightningBolt:DestroyDissipate(TimeLength, Strength) --works with self.ContractFrom property to create a dissipation effect
+	TimeLength = TimeLength or 0.2
+	Strength = Strength or 0.5
 	local DissipateStartT = clock()
-	local start, goal = self.MinTransparency, self.ContractFrom + 1 / (#self._Parts * self.FadeLength)
+	local start, mid, goal = self.MinTransparency, self.ContractFrom, self.ContractFrom
+		+ 1 / (#self._Parts * self.FadeLength)
+	local StartThick = self.Thickness
+	local StartRadius = self.MaxRadius
 	local DissipateLoop
 
 	DissipateLoop = RunService.Heartbeat:Connect(function()
 		local TimeSinceDissipate = clock() - DissipateStartT
 
-		if TimeSinceDissipate < TimeLength then
-			self.MinTransparency = start + (goal - start) * (TimeSinceDissipate / TimeLength) ^ 0.01
+		if TimeSinceDissipate < TimeLength * 0.4 then
+			local interp = (TimeSinceDissipate / (TimeLength * 0.4))
+			self.MinTransparency = start + (mid - start) * interp
+		elseif TimeSinceDissipate < TimeLength then
+			local interp = ((TimeSinceDissipate - TimeLength * 0.4) / (TimeLength * 0.6))
+			self.MinTransparency = mid + (goal - mid) * interp ^ 1.5
+			self.Thickness = StartThick * (1 - interp)
+			self.MaxRadius = StartRadius * (1 + Strength * interp)
+			self.MinRadius = self.MinRadius + (self.MaxRadius - self.MinRadius) * interp
 		else
 			--Destroy Bolt
 			local TimePassed = clock() - self._StartT
