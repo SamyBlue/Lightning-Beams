@@ -116,6 +116,7 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 			-First input passed must be a parameter representing PercentAlongBolt between values 0 and 1
 			-Second input passed must be a parameter representing TimePassed since instantiation 
 		Example: self.OpacityProfileFunction = MovingSineWave(PercentAlongBolt, TimePassed)
+		Note: You may want to set self.ContractFrom to a value above 1 if you pass a custom opacity profile as contraction was designed to work with DiscretePulse
 	--]]
 	self.OpacityProfileFunction = DiscretePulse
 	--*
@@ -246,7 +247,8 @@ game:GetService("RunService").Heartbeat:Connect(function()
 				- a1.WorldAxis * CurveSize1, a1.WorldPosition
 
 			--Initialise iterative scheme for generating points along space curve
-			local PrevPoint, bezier0 = p0, p0
+			local init = SpaceCurveFunction(0, p0, p1, p2, p3)
+			local PrevPoint, bezier0 = init, init
 
 			--Update
 			if TimePassed < Lifetime then
