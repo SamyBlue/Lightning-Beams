@@ -161,16 +161,17 @@ function LightningBolt:Destroy()
 	self = nil
 end
 
-function LightningBolt:DestroyDissipate(timeLength) --works with self.ContractFrom property to create a dissipation effect
+function LightningBolt:DestroyDissipate(TimeLength) --works with self.ContractFrom property to create a dissipation effect
+	TimeLength = TimeLength or 0.1
 	local DissipateStartT = clock()
-	local start, goal = self.MinTransparency, (1 - self.ContractFrom) - 1 / (#self._Parts * self.FadeLength)
+	local start, goal = self.MinTransparency, self.ContractFrom + 1 / (#self._Parts * self.FadeLength)
 	local DissipateLoop
 
 	DissipateLoop = RunService.Heartbeat:Connect(function()
 		local TimeSinceDissipate = clock() - DissipateStartT
 
-		if TimeSinceDissipate < timeLength then
-			self.MinTransparency = start + (goal - start) * (TimeSinceDissipate / timeLength) ^ 0.2
+		if TimeSinceDissipate < TimeLength then
+			self.MinTransparency = start + (goal - start) * (TimeSinceDissipate / TimeLength) ^ 0.01
 		else
 			--Destroy Bolt
 			local TimePassed = clock() - self._StartT
