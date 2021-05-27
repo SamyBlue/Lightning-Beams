@@ -167,20 +167,20 @@ function LightningBolt:DestroyDissipate(TimeLength, Strength) --works with self.
 	local DissipateStartT = clock()
 	local start, mid, goal = self.MinTransparency, self.ContractFrom, self.ContractFrom
 		+ 1 / (#self._Parts * self.FadeLength)
-	local StartThick = self.Thickness
 	local StartRadius = self.MaxRadius
+	local StartMinThick = self.MinThicknessMultiplier
 	local DissipateLoop
 
 	DissipateLoop = RunService.Heartbeat:Connect(function()
 		local TimeSinceDissipate = clock() - DissipateStartT
+		self.MinThicknessMultiplier = StartMinThick + (-2 - StartMinThick) * TimeSinceDissipate / TimeLength
 
 		if TimeSinceDissipate < TimeLength * 0.4 then
 			local interp = (TimeSinceDissipate / (TimeLength * 0.4))
 			self.MinTransparency = start + (mid - start) * interp
 		elseif TimeSinceDissipate < TimeLength then
 			local interp = ((TimeSinceDissipate - TimeLength * 0.4) / (TimeLength * 0.6))
-			self.MinTransparency = mid + (goal - mid) * interp ^ 1.5
-			self.Thickness = StartThick * (1 - interp)
+			self.MinTransparency = mid + (goal - mid) * interp
 			self.MaxRadius = StartRadius * (1 + Strength * interp)
 			self.MinRadius = self.MinRadius + (self.MaxRadius - self.MinRadius) * interp
 		else
@@ -220,6 +220,7 @@ function LightningBolt:_UpdateGeometry(
 
 	--Compute thickness for this particular section
 	local Thickness = self.Thickness * ThicknessNoiseMultiplier * Opacity
+	Opacity = Thickness > 0 and Opacity or 0
 
 	--Compute + update sizing and orientation of this particular section
 	local contractf = 1 - self.ContractFrom
