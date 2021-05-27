@@ -194,6 +194,7 @@ function LightningBolt:DestroyDissipate(TimeLength, Strength) --works with self.
 
 			--Disconnect Loop
 			DissipateLoop:Disconnect()
+			DissipateLoop = nil
 		end
 	end)
 end
