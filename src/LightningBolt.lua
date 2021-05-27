@@ -161,7 +161,8 @@ function LightningBolt:Destroy()
 	self = nil
 end
 
-function LightningBolt:DestroyDissipate(TimeLength, Strength) --works with self.ContractFrom property to create a dissipation effect
+--Calls Destroy() after TimeLength seconds where a dissipating effect takes place in the meantime
+function LightningBolt:DestroyDissipate(TimeLength, Strength)
 	TimeLength = TimeLength or 0.2
 	Strength = Strength or 0.5
 	local DissipateStartT = clock()
