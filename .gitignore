@@ -1,3 +1,5 @@
 roblox.toml
 selene.toml
 .vscode
+src/LightningExplosion.lua
+src/LightningSparks.lua
