@@ -9,7 +9,7 @@
 local PARTS_IN_CACHE = 1000 --Recommend setting higher if you intend to use LightningSparks
 local clock = os.clock
 local workspace, RunService = game:GetService("Workspace"), game:GetService("RunService")
-local parent = workspace.CurrentCamera
+local parent = workspace.Terrain
 
 --*Part Cache Setup
 --New parts automatically get added to cache if more parts are requested for use where a warning is thrown
