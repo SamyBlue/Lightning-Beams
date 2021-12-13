@@ -18,6 +18,7 @@ local BoltPart = Instance.new("Part") --Template primitive that will make up the
 BoltPart.TopSurface, BoltPart.BottomSurface = 0, 0
 BoltPart.Anchored, BoltPart.CanCollide = true, false
 BoltPart.Locked, BoltPart.CastShadow = true, false
+BoltPart.CanTouch, BoltPart.CanQuery = false, false
 BoltPart.Shape = "Cylinder"
 BoltPart.Name = "BoltPart"
 BoltPart.Material = Enum.Material.Neon
