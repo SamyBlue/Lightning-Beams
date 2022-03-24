@@ -6,9 +6,9 @@
 	i.e. You can change a property at any time after a LightningBolt instance is created and it will still update the look of the bolt
 --]]
 
-local PARTS_IN_CACHE = 1000 --Recommend setting higher if you intend to use LightningSparks
-local clock = os.clock
+local PARTS_IN_CACHE = 500 --Recommend setting higher if you intend to use LightningSparks
 local workspace, RunService = game:GetService("Workspace"), game:GetService("RunService")
+local clock = RunService:IsRunning() and time or os.clock
 local parent = workspace.Terrain
 
 --*Part Cache Setup
