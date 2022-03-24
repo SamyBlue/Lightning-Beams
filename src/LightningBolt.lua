@@ -2,12 +2,14 @@
 	Procedural Lightning Effect Module. By Quasiduck
 	License: https://github.com/SamyBlue/Lightning-Beams/blob/main/LICENSE
 	See README for guide on how to use or scroll down to see all properties in LightningBolt.new
+	See README for credits
 --]]
 
 local PARTS_IN_CACHE = 500 --Recommend setting higher if you intend to use LightningSparks
-local workspace, RunService = game:GetService("Workspace"), game:GetService("RunService")
+local storePartsWithin = game:GetService("Workspace").Terrain
+
+local RunService = game:GetService("RunService")
 local clock = RunService:IsRunning() and time or os.clock
-local parent = workspace.Terrain
 
 --*Part Cache Setup
 --New parts automatically get added to cache if more parts are requested for use where a warning is thrown
@@ -24,7 +26,7 @@ BoltPart.Transparency = 1
 
 local PartCache = require(script.Parent.PartCache:WaitForChild("PartCache"))
 local LightningCache = PartCache.new(BoltPart, PARTS_IN_CACHE)
-LightningCache:SetCacheParent(parent)
+LightningCache:SetCacheParent(storePartsWithin)
 
 local function CubicBezier(PercentAlongBolt, p0, p1, p2, p3)
 	return p0 * (1 - PercentAlongBolt) ^ 3
