@@ -2,8 +2,6 @@
 	Procedural Lightning Effect Module. By Quasiduck
 	License: https://github.com/SamyBlue/Lightning-Beams/blob/main/LICENSE
 	See README for guide on how to use or scroll down to see all properties in LightningBolt.new
-	All properties update in real-time except PartCount which requires a new LightningBolt to change
-	i.e. You can change a property at any time after a LightningBolt instance is created and it will still update the look of the bolt
 --]]
 
 local PARTS_IN_CACHE = 500 --Recommend setting higher if you intend to use LightningSparks
@@ -13,7 +11,6 @@ local parent = workspace.Terrain
 
 --*Part Cache Setup
 --New parts automatically get added to cache if more parts are requested for use where a warning is thrown
-
 local BoltPart = Instance.new("Part") --Template primitive that will make up the entire bolt
 BoltPart.TopSurface, BoltPart.BottomSurface = 0, 0
 BoltPart.Anchored, BoltPart.CanCollide = true, false
@@ -28,8 +25,6 @@ BoltPart.Transparency = 1
 local PartCache = require(script.Parent.PartCache:WaitForChild("PartCache"))
 local LightningCache = PartCache.new(BoltPart, PARTS_IN_CACHE)
 LightningCache:SetCacheParent(parent)
-
---*
 
 local function CubicBezier(PercentAlongBolt, p0, p1, p2, p3)
 	return p0 * (1 - PercentAlongBolt) ^ 3
