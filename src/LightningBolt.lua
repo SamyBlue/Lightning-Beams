@@ -1,8 +1,8 @@
 --[[
-	Procedural Lightning Effect Module. By Quasiduck
+	Procedurally generated lightning effects in Roblox
+	Documentation: https://github.com/SamyBlue/Lightning-Beams/blob/main/README.md --TODO: Update README when planned v2.0 features implemented successfully
 	License: https://github.com/SamyBlue/Lightning-Beams/blob/main/LICENSE
-	See README for guide on how to use or scroll down to see all properties in LightningBolt.new
-	See README for credits
+	See Documentation for guide on how to use or scroll down to see all public properties and methods
 --]]
 
 local PARTS_IN_CACHE = 500 --Recommend setting higher if you intend to use LightningSparks
@@ -11,9 +11,10 @@ local storePartsWithin = game:GetService("Workspace").Terrain
 local RunService = game:GetService("RunService")
 local clock = RunService:IsRunning() and time or os.clock
 
+--TODO: Seperate out into LightningCache module
 --*Part Cache Setup
---New parts automatically get added to cache if more parts are requested for use where a warning is thrown
-local BoltPart = Instance.new("Part") --Template primitive that will make up the entire bolt
+--New parts automatically get added to cache if more parts are requested for use where a warning is also thrown in the console
+local BoltPart = Instance.new("Part") --Template that will be used to draw the geometry of LightningBolt
 BoltPart.TopSurface, BoltPart.BottomSurface = 0, 0
 BoltPart.Anchored, BoltPart.CanCollide = true, false
 BoltPart.Locked, BoltPart.CastShadow = true, false
@@ -24,10 +25,12 @@ BoltPart.Material = Enum.Material.Neon
 BoltPart.Color = Color3.new(1, 1, 1)
 BoltPart.Transparency = 1
 
-local PartCache = require(script.Parent.PartCache:WaitForChild("PartCache"))
+local PartCache = require(script.Parent.PartCache:WaitForChild("PartCache")) --TODO: Create a dependency folder
 local LightningCache = PartCache.new(BoltPart, PARTS_IN_CACHE)
 LightningCache:SetCacheParent(storePartsWithin)
 
+--TODO: Seperate out into MathUtils module
+--*Math utilities
 local function CubicBezier(PercentAlongBolt, p0, p1, p2, p3)
 	return p0 * (1 - PercentAlongBolt) ^ 3
 		+ p1 * 3 * PercentAlongBolt * (1 - PercentAlongBolt) ^ 2
@@ -39,7 +42,7 @@ local function DiscretePulse(PercentAlongBolt, TimePassed, s, k, f, min, max) --
 	return math.clamp(k / (2 * f) - math.abs((PercentAlongBolt - TimePassed * s + 0.5 * k) / f), min, max)
 end
 
-local function ExtrudeCenter(PercentAlongBolt)
+local function ExtrudeCenter(PercentAlongBolt) --TODO: Rename to PinchedCornersCurve to make clearer what it looks like
 	return math.exp(-5000 * (PercentAlongBolt - 0.5) ^ 10)
 end
 
@@ -47,65 +50,49 @@ local function NoiseBetween(x, y, z, min, max)
 	return min + (max - min) * (math.noise(x, y, z) + 0.5)
 end
 
-local xInverse = CFrame.lookAt(Vector3.new(), Vector3.new(1, 0, 0)):inverse()
-local offsetAngle = math.cos(math.rad(90))
+local xInverse = CFrame.lookAt(Vector3.new(), Vector3.new(1, 0, 0)):Inverse() --TODO: Rename to X_LOOKAT where "Helps for pointing RightVector towards point x when multiplied with CFrame.lookAt(_, x)"
+local offsetAngle = math.cos(math.rad(90)) --TODO: Replace with 0 in relevant code and remove this variable
 
-local ActiveBranches = {} --Contains all LightningBolt instances
+--*Class setup
+local ActiveBranches = {} --Contains all instances of LightningBolt --TODO: Rename to LightningBoltInstances
 
 local LightningBolt = {} --Define new class
-LightningBolt.__type = "LightningBolt"
 LightningBolt.__index = LightningBolt
-
---Small tip: You don't need to use actual Roblox Attachments below. You can also create "fake" ones as follows:
---[[
-	local A1, A2 = {}, {}
-	A1.WorldPosition, A1.WorldAxis = chosenPos1, chosenAxis1
-	A2.WorldPosition, A2.WorldAxis = chosenPos2, chosenAxis2
-	local NewBolt = LightningBolt.new(A1, A2, 40)
---]]
 
 function LightningBolt.new(Attachment0, Attachment1, PartCount)
 	local self = setmetatable({}, LightningBolt)
 	PartCount = PartCount or 30
 
-	--*Main (default) Properties--
+	--Bolt Appearance Properties --TODO: Seperate out into private method: _SetupDefaultAppearance() except for self.Attachment0, self.Attachment1 which should stay put within this constructor
+	self.Enabled = true --Hides bolt without destroying any parts when false --TODO: Deprecate and remove functionality due to unintuitive interaction with bolt destruction being on a timer
+	self.Attachment0, self.Attachment1 = Attachment0, Attachment1 --Attachment0 governs where the LightningBolt starts from. Attachment1 governs where the LightningBolt ends.
+	self.CurveSize0, self.CurveSize1 = 0, 0 --Works similarly to Roblox's Beams. See https://dk135eecbplh9.cloudfront.net/assets/blt160ad3fdeadd4ff2/BeamCurve1.png for help understanding.
+	self.MinRadius, self.MaxRadius = 0, 2.4 --Governs the min and max radial offset distance of points interpolated along the current SpaceCurveFunction --TODO: Write simpler description
+	self.Frequency = 1 --Governs the perceived frequency of radial fluctuations
+	self.AnimationSpeed = 7 --Governs how fast the LightningBolt oscillates over time. Set to 0 to have a static looking LightningBolt that doesn't change geometry over time.
+	self.Thickness = 1 --Governs the thickness of the LightningBolt
+	self.MinThicknessMultiplier, self.MaxThicknessMultiplier = 0.2, 1 --Multiplies perceived thickness by a fluctuating random value between MinThicknessMultiplier and MaxThicknessMultiplier along the Bolt
 
-	--Bolt Appearance Properties
-
-	self.Enabled = true --Hides bolt without removing any parts when false
-	self.Attachment0, self.Attachment1 = Attachment0, Attachment1 --Bolt originates from Attachment0 and ends at Attachment1
-	self.CurveSize0, self.CurveSize1 = 0, 0 --Works similarly to roblox beams. See https://dk135eecbplh9.cloudfront.net/assets/blt160ad3fdeadd4ff2/BeamCurve1.png
-	self.MinRadius, self.MaxRadius = 0, 2.4 --Governs the amplitude of fluctuations throughout the bolt
-	self.Frequency = 1 --Governs the frequency of fluctuations throughout the bolt. Lower this to remove jittery-looking lightning
-	self.AnimationSpeed = 7 --Governs how fast the bolt oscillates (i.e. how fast the fluctuating wave travels along bolt)
-	self.Thickness = 1 --The thickness of the bolt
-	self.MinThicknessMultiplier, self.MaxThicknessMultiplier = 0.2, 1 --Multiplies Thickness value by a fluctuating random value between MinThicknessMultiplier and MaxThicknessMultiplier along the Bolt
-
-	--Bolt Kinetic Properties
-
+	--Bolt Kinetic Properties --TODO: Seperate out into private method: _SetupDefaultKinetics()
 	--[[
-		Allows for fading in (or out) of the bolt with time. Can also create a "projectile" bolt
-		Recommend setting AnimationSpeed to 0 if used as projectile (for better aesthetics)
-		Works by passing a "wave" function which travels from left to right where the wave height represents opacity (opacity being 1 - Transparency)
-		See https://www.desmos.com/calculator/hg5h4fpfim to help customise the shape of the wave with the below properties
+		Governs how the LightningBolt moves from Attachment0 to Attachment1
+		Recommend setting AnimationSpeed to 0 if using a LightningBolt visually as a moving projectile (for better aesthetics)
+		Works by moving a travelling wave along the LightningBolt where the height of the wave represents visibility at a particular percentage point along the LightningBolt
+		See https://www.desmos.com/calculator/hg5h4fpfim to help customise the shape of the travelling wave with the below properties
 	--]]
-	self.MinTransparency, self.MaxTransparency = 0, 1
-	self.PulseSpeed = 2 --Bolt arrives at Attachment1 1/PulseSpeed seconds later
-	self.PulseLength = 1000000
+	self.MinTransparency, self.MaxTransparency = 0, 1 --TODO: Deprecate (and make private version) due to future optimization of performing less updates on Transparent BoltParts
+	self.PulseSpeed = 2 --Tip: Bolt first arrives at Attachment1 at [1 / PulseSpeed] seconds. Bolt gets destroyed at [(PulseLength + 1) / PulseSpeed] seconds
+	self.PulseLength = 100
 	self.FadeLength = 0.2
-	self.ContractFrom = 0.5 --Parts shorten or grow once their Transparency exceeds this value. Set to a value above 1 to turn effect off. See https://imgur.com/OChA441
+	self.ContractFrom = 0.5 --Parts shorten or grow once their Transparency exceeds this value. See https://imgur.com/OChA441
 
-	--Bolt Color Properties
+	--Bolt Color Properties 
+	self.Color = Color3.new(1, 1, 1) --Can be a Color3 or ColorSequence --TODO: Deprecate and replace with new color-setting method
+	self.ColorOffsetSpeed = 3 --Sets speed at which ColorSequence travels along Bolt --TODO: Deprecate and replace with new color-setting method
 
-	self.Color = Color3.new(1, 1, 1) --Can be a Color3 or ColorSequence
-	self.ColorOffsetSpeed = 3 --Sets speed at which ColorSequence travels along Bolt
-
-	--*
-
-	--*Advanced Properties--
-
+	--Advanced Properties
 	--[[
-		Allows you to pass a custom space curve for the bolt to be defined along
+		Allows you to pass a custom space curve for the LightningBolt to be defined along
 		Constraints: 
 			-First input passed must be a parameter representing PercentAlongBolt between values 0 and 1
 		Example: self.SpaceCurveFunction = VivianiCurve(PercentAlongBolt)
@@ -113,26 +100,25 @@ function LightningBolt.new(Attachment0, Attachment1, PartCount)
 	self.SpaceCurveFunction = CubicBezier
 
 	--[[
-		Allows you to pass a custom opacity profile which controls the opacity along the bolt
+		Allows you to pass a custom opacity profile which controls the opacity along the LightningBolt
 		Constraints: 
 			-First input passed must be a parameter representing PercentAlongBolt between values 0 and 1
 			-Second input passed must be a parameter representing TimePassed since instantiation 
 		Example: self.OpacityProfileFunction = MovingSineWave(PercentAlongBolt, TimePassed)
 		Note: You may want to set self.ContractFrom to a value above 1 if you pass a custom opacity profile as contraction was designed to work with DiscretePulse
 	--]]
-	self.OpacityProfileFunction = DiscretePulse
+	self.OpacityProfileFunction = DiscretePulse --TODO: Deprecate due to future optimization of performing less updates on Transparent BoltParts which only works with DiscretePulse
 
 	--[[
-		Allows you to pass a custom radial profile which controls the radius of control points along the bolt
+		Allows you to create a custom radial profile which multiplies with the radial offset distances --TODO: Write simpler description
 		Constraints: 
 			-First input passed must be a parameter representing PercentAlongBolt between values 0 and 1
 	--]]
 	self.RadialProfileFunction = ExtrudeCenter
-	--*
-
-	--! Private vars are prefixed with an underscore (e.g. self._Parts) and should not be changed manually
-
-	self._Parts = {} --The BoltParts which make up the Bolt
+	
+	--Private variables
+	--! Private variables are prefixed with an underscore (e.g. self._Parts) and should not be changed from outside this module
+	self._Parts = {} --Stores all Parts which make up the Bolt
 
 	for i = 1, PartCount do
 		self._Parts[i] = LightningCache:GetPart()
@@ -159,7 +145,7 @@ function LightningBolt:Destroy()
 	self = nil
 end
 
---Calls Destroy() after TimeLength seconds where a dissipating effect takes place in the meantime
+--Calls Destroy() after TimeLength seconds where a dissipating effect takes place in the meantime --TODO: Replace with simpler and more aesthetic thickness frequency method in plan
 function LightningBolt:DestroyDissipate(TimeLength, Strength)
 	TimeLength = TimeLength or 0.2
 	Strength = Strength or 0.5
@@ -202,11 +188,11 @@ function LightningBolt:_UpdateGeometry(
 	BPart,
 	PercentAlongBolt,
 	TimePassed,
-	ThicknessNoiseMultiplier,
+	ThicknessNoiseMultiplier, --TODO: Refactor with a private property storing array of thickness data
 	PrevPoint,
 	NextPoint
 )
-	--Compute opacity for this particular section
+	--Compute opacity for this particular section --TODO: Seperate out into separate private method which updates a private property storing array of opacities
 	local MinOpa, MaxOpa = 1 - self.MaxTransparency, 1 - self.MinTransparency
 	local Opacity = self.OpacityProfileFunction(
 		PercentAlongBolt,
@@ -218,12 +204,12 @@ function LightningBolt:_UpdateGeometry(
 		MaxOpa
 	)
 
-	--Compute thickness for this particular section
+	--Compute thickness for this particular section --TODO: Seperate out into separate private method which updates a private property storing array of thickness data
 	local Thickness = self.Thickness * ThicknessNoiseMultiplier * Opacity
 	Opacity = Thickness > 0 and Opacity or 0
 
 	--Compute + update sizing and orientation of this particular section
-	local contractf = 1 - self.ContractFrom
+	local contractf = 1 - self.ContractFrom --TODO: Would be nice in future to refactor this section to make the math formulas here more intuitive
 	local PartsN = #self._Parts
 	if Opacity > contractf then
 		BPart.Size = Vector3.new((NextPoint - PrevPoint).Magnitude, Thickness, Thickness)
@@ -244,7 +230,7 @@ function LightningBolt:_UpdateGeometry(
 	end
 end
 
-function LightningBolt:_UpdateColor(BPart, PercentAlongBolt, TimePassed)
+function LightningBolt:_UpdateColor(BPart, PercentAlongBolt, TimePassed) --TODO: Refactor with new color updating methods
 	if typeof(self.Color) == "Color3" then
 		BPart.Color = self.Color
 	else --ColorSequence
@@ -269,8 +255,9 @@ function LightningBolt:_Disable()
 	end
 end
 
-RunService.Heartbeat:Connect(function()
-	debug.profilebegin("LightningBolt") --Create performance profile
+--TODO: Refactor into RunService.Heartbeat:Connect(UpdateAllLightningBolts)
+RunService.Heartbeat:Connect(function () --TODO: Refactor below variables with more descriptive variable names that are camelCase and refactor more into single-purpose utility methods
+	debug.profilebegin("LightningBolt") --Create performance profile of all LightningBolt instances
 
 	for _, ThisBranch in pairs(ActiveBranches) do
 		if ThisBranch.Enabled == true then
@@ -279,17 +266,19 @@ RunService.Heartbeat:Connect(function()
 			--Extract important variables
 			local MinRadius, MaxRadius = ThisBranch.MinRadius, ThisBranch.MaxRadius
 			local Parts = ThisBranch._Parts
-			local PartsN = #Parts
+			local PartsN = #Parts --TODO: Create a private variable for this as it will basically never change
 			local RanNum = ThisBranch._RanNum
 			local spd = ThisBranch.AnimationSpeed
 			local freq = ThisBranch.Frequency
 			local MinThick, MaxThick = ThisBranch.MinThicknessMultiplier, ThisBranch.MaxThicknessMultiplier
-			local TimePassed = clock() - ThisBranch._StartT
+			local TimePassed = clock() - ThisBranch._StartT --TODO: Convert to public function: SetTimePassed(clock() - ThisBranch._StartT)
 			local SpaceCurveFunction, RadialProfileFunction =
 				ThisBranch.SpaceCurveFunction, ThisBranch.RadialProfileFunction
-			local Lifetime = (ThisBranch.PulseLength + 1) / ThisBranch.PulseSpeed
+			local Lifetime = (ThisBranch.PulseLength + 1) / ThisBranch.PulseSpeed --TODO: Convert to private function: _GetLifetime()
 
-			--Extract control points
+			--TODO: Create a function which outputs the min and max index to iterate through for changes (i.e. the planned transparency optimization)
+
+			--Extract control points --TODO: Refactor into function which updates a private property holding a table of SpaceCurve points (which potentially utilizes memoization?)
 			local a0, a1, CurveSize0, CurveSize1 =
 				ThisBranch.Attachment0, ThisBranch.Attachment1, ThisBranch.CurveSize0, ThisBranch.CurveSize1
 			local p0, p1, p2, p3 = a0.WorldPosition, a0.WorldPosition
@@ -298,15 +287,15 @@ RunService.Heartbeat:Connect(function()
 
 			--Initialise iterative scheme for generating points along space curve
 			local init = SpaceCurveFunction(0, p0, p1, p2, p3)
-			local PrevPoint, bezier0 = init, init
+			local PrevPoint, bezier0 = init, init --TODO: Replace with more general purpose name given that the SpaceCurveFunction may not be CubicBezier
 
 			--Update
-			if TimePassed < Lifetime then
-				for i = 1, PartsN do
+			if TimePassed < Lifetime then --TODO: Refactor into guard expression that goes at the top with a continue statement if true
+				for i = 1, PartsN do --TODO: Seperate out for loop into separate loops that execute within single-purpose utility methods
 					local BPart = Parts[i]
-					local PercentAlongBolt = i / PartsN
+					local PercentAlongBolt = i / PartsN --TODO: Create private property storing array of percent points
 
-					--Compute noisy inputs
+					--Compute noisy inputs --TODO: Give more descriptive names indicating where each noise value is used and clean up the math a little + Put in relevant private methods
 					local input, input2 = (spd * -TimePassed)
 						+ freq * 10 * PercentAlongBolt
 						- 0.2
@@ -319,20 +308,20 @@ RunService.Heartbeat:Connect(function()
 					local thicknessNoise = NoiseBetween(2.3, input2, input, MinThick, MaxThick)
 
 					--Find next point along space curve
-					local bezier1 = SpaceCurveFunction(PercentAlongBolt, p0, p1, p2, p3)
+					local bezier1 = SpaceCurveFunction(PercentAlongBolt, p0, p1, p2, p3) --TODO: Refactor into function which updates a private property holding a table of SpaceCurve points
 
-					--Find next point along bolt
+					--Find next point along LightningBolt --TODO: Refactor into function that computes the noisy inputs within it as well as all LightningBolt points which updates a private property holding a table of all of them
 					local NextPoint = i ~= PartsN
 							and (CFrame.new(bezier0, bezier1) * CFrame.Angles(0, 0, noise0) * CFrame.Angles(
 							math.acos(math.clamp(NoiseBetween(input2, input, 2.7, offsetAngle, 1), -1, 1)),
 							0,
 							0
 						) * CFrame.new(0, 0, -noise1)).Position
-						or bezier1
+						or bezier1 --TODO: Replace .new(bezier0, bezier1) with .lookAt(bezier0, bezier1) + Seperate out into math utility "VectorWithinSemisphere"?
 
-					ThisBranch:_UpdateGeometry(BPart, PercentAlongBolt, TimePassed, thicknessNoise, PrevPoint, NextPoint)
+					ThisBranch:_UpdateGeometry(BPart, PercentAlongBolt, TimePassed, thicknessNoise, PrevPoint, NextPoint) --TODO: Refactor to use private methods and vars
 
-					ThisBranch:_UpdateColor(BPart, PercentAlongBolt, TimePassed)
+					ThisBranch:_UpdateColor(BPart, PercentAlongBolt, TimePassed) --TODO: Refactor to use private methods and vars
 
 					PrevPoint, bezier0 = NextPoint, bezier1
 				end
